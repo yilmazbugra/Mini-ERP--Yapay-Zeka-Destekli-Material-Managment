@@ -160,6 +160,14 @@ excel_exports/
 *.xlsx
 *.xls
 
+# Screenshots and documentation files
+Ekran Resmi*.png
+Ekran Resmi*.jpg
+Ekran Resmi*.jpeg
+*.docx
+*.doc
+*.pdf
+
 # Temporary files
 *.tmp
 *.temp
