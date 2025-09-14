@@ -2,6 +2,48 @@
 
 Kurumsal ERP'lerdeki MM (Material Management) modülünün küçültülmüş, CV'de güçlü görünen, üretime yakın bir versiyonu.
 
+## 🖼️ Ekran Görüntüleri
+
+### 📊 Ana Dashboard
+![Ana Dashboard](screenshot/dashboard.png)
+*Ana dashboard - Genel sistem özeti ve hızlı erişim menüleri*
+
+### 🤖 AI Destekli Dashboard
+![AI Dashboard](screenshot/AI_dashboard.png)
+*Yapay zeka destekli analiz dashboard'u*
+
+![AI Dashboard 2](screenshot/aidashboard2.png)
+*AI dashboard - Gelişmiş analiz ve tahmin özellikleri*
+
+### 📦 Ürün Yönetimi
+![Ürünler](screenshot/products.png)
+*Ürün listesi ve yönetim sayfası*
+
+### 🏢 Tedarikçi Yönetimi
+![Tedarikçiler](screenshot/suppliers.png)
+*Tedarikçi bilgileri ve yönetim paneli*
+
+### 📊 Envanter Takibi
+![Envanter](screenshot/inventory.png)
+*Envanter durumu ve stok takibi*
+
+### 🔄 Stok Hareketleri
+![Stok Hareketleri](screenshot/movements.png)
+*Stok giriş/çıkış hareketleri*
+
+### 📈 Raporlar
+![Raporlar 1](screenshot/reports1.png)
+*Detaylı raporlama sayfası*
+
+![Raporlar 2](screenshot/reports2.png)
+*Raporlama dashboard'u ve analiz grafikleri*
+
+### 👥 Müşteri Segmentasyonu
+![Müşteri Segmentasyonu](screenshot/segmentation.png)
+*AI destekli müşteri segmentasyonu analizi*
+
+---
+
 ## Özellikler
 
 ### 🏭 Temel Modüller
@@ -245,7 +287,7 @@ flask db upgrade
 
 ## Lisans
 
-Bu proje MIT lisansı altında lisanslanmıştır.
+  
 
 ## Katkıda Bulunma
 

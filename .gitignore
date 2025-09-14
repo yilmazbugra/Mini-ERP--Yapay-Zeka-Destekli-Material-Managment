@@ -168,6 +168,12 @@ Ekran Resmi*.jpeg
 *.doc
 *.pdf
 
+# Allow screenshot folder for README
+!mini_erp/screenshot/
+!mini_erp/screenshot/*.png
+!mini_erp/screenshot/*.jpg
+!mini_erp/screenshot/*.jpeg
+
 # Temporary files
 *.tmp
 *.temp
