@@ -5,41 +5,41 @@ Kurumsal ERP'lerdeki MM (Material Management) modülünün küçültülmüş, CV
 ## 🖼️ Ekran Görüntüleri
 
 ### 📊 Ana Dashboard
-![Ana Dashboard](screenshot/dashboard.png)
+![Ana Dashboard](mini_erp/screenshot/dashboard.png)
 *Ana dashboard - Genel sistem özeti ve hızlı erişim menüleri*
 
 ### 🤖 AI Destekli Dashboard
-![AI Dashboard](screenshot/AI_dashboard.png)
+![AI Dashboard](mini_erp/screenshot/AI_dashboard.png)
 *Yapay zeka destekli analiz dashboard'u*
 
-![AI Dashboard 2](screenshot/aidashboard2.png)
+![AI Dashboard 2](mini_erp/screenshot/aidashboard2.png)
 *AI dashboard - Gelişmiş analiz ve tahmin özellikleri*
 
 ### 📦 Ürün Yönetimi
-![Ürünler](screenshot/products.png)
+![Ürünler](mini_erp/screenshot/products.png)
 *Ürün listesi ve yönetim sayfası*
 
 ### 🏢 Tedarikçi Yönetimi
-![Tedarikçiler](screenshot/suppliers.png)
+![Tedarikçiler](mini_erp/screenshot/suppliers.png)
 *Tedarikçi bilgileri ve yönetim paneli*
 
 ### 📊 Envanter Takibi
-![Envanter](screenshot/inventory.png)
+![Envanter](mini_erp/screenshot/inventory.png)
 *Envanter durumu ve stok takibi*
 
 ### 🔄 Stok Hareketleri
-![Stok Hareketleri](screenshot/movements.png)
+![Stok Hareketleri](mini_erp/screenshot/movements.png)
 *Stok giriş/çıkış hareketleri*
 
 ### 📈 Raporlar
-![Raporlar 1](screenshot/reports1.png)
+![Raporlar 1](mini_erp/screenshot/reports1.png)
 *Detaylı raporlama sayfası*
 
-![Raporlar 2](screenshot/reports2.png)
+![Raporlar 2](mini_erp/screenshot/reports2.png)
 *Raporlama dashboard'u ve analiz grafikleri*
 
 ### 👥 Müşteri Segmentasyonu
-![Müşteri Segmentasyonu](screenshot/segmentation.png)
+![Müşteri Segmentasyonu](mini_erp/screenshot/segmentation.png)
 *AI destekli müşteri segmentasyonu analizi*
 
 ---
@@ -83,8 +83,8 @@ Kurumsal ERP'lerdeki MM (Material Management) modülünün küçültülmüş, CV
 
 1. **Repository'yi klonlayın**
 ```bash
-git clone <repository-url>
-cd mini_erp
+git clone https://github.com/yilmazbugra/Mini-ERP--Yapay-Zeka-Destekli-Material-Managment.git
+cd Mini-ERP--Yapay-Zeka-Destekli-Material-Managment/mini_erp
 ```
 
 2. **Virtual environment oluşturun**
@@ -116,6 +116,7 @@ Uygulama http://localhost:5001 adresinde çalışacaktır.
 
 1. **Docker Compose ile çalıştırın**
 ```bash
+cd mini_erp
 docker-compose up --build
 ```
 
@@ -253,22 +254,27 @@ GET /api/reports/movement-summary?days=30
 
 ### Proje Yapısı
 ```
-mini_erp/
-├── app/
-│   ├── models/          # Veritabanı modelleri
-│   ├── routes/          # API endpoint'leri
-│   ├── services/        # İş mantığı servisleri
-│   └── utils/           # Yardımcı fonksiyonlar
-├── frontend/
-│   ├── templates/       # HTML şablonları
-│   └── static/          # CSS, JS, resimler
-├── tests/               # Test dosyaları
-├── migrations/          # Veritabanı migration'ları
-└── config.py           # Konfigürasyon
+Mini-ERP--Yapay-Zeka-Destekli-Material-Managment/
+├── README.md           # Proje dokümantasyonu
+├── .gitignore         # Git ignore kuralları
+└── mini_erp/          # Ana proje klasörü
+    ├── app/
+    │   ├── models/     # Veritabanı modelleri
+    │   ├── routes/     # API endpoint'leri
+    │   ├── services/   # İş mantığı servisleri
+    │   └── utils/      # Yardımcı fonksiyonlar
+    ├── frontend/
+    │   ├── templates/  # HTML şablonları
+    │   └── static/     # CSS, JS, resimler
+    ├── screenshot/     # Ekran görüntüleri
+    ├── tests/          # Test dosyaları
+    ├── migrations/     # Veritabanı migration'ları
+    └── config.py      # Konfigürasyon
 ```
 
 ### Test Çalıştırma
 ```bash
+cd mini_erp
 # Tüm testleri çalıştır
 python -m pytest tests/
 
@@ -278,6 +284,7 @@ python -m pytest --cov=app tests/
 
 ### Veritabanı Migration
 ```bash
+cd mini_erp
 # Migration oluştur
 flask db migrate -m "Migration message"
 
