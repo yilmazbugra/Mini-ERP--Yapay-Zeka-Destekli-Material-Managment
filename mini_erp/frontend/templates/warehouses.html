@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Depolar - Mini ERP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-warehouse me-2"></i>Depolar</h2>
+            <div id="add-warehouse-button" style="display: none;">
+                <button class="btn btn-primary" onclick="showAddWarehouseModal()">
+                    <i class="fas fa-plus me-1"></i>Yeni Depo
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Kod</th>
+                                <th>Depo Adı</th>
+                                <th>Adres</th>
+                                <th>Durum</th>
+                                <th>Oluşturulma</th>
+                                <th width="120">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="warehouses-table">
+                            <tr>
+                                <td colspan="6" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Yükleniyor...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Warehouse Modal -->
+<div class="modal fade" id="addWarehouseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Depo Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addWarehouseForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="code" class="form-label">Depo Kodu *</label>
+                        <input type="text" class="form-control" id="code" name="code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Depo Adı *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Adres</label>
+                        <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Warehouse Modal -->
+<div class="modal fade" id="editWarehouseModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Depo Düzenle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editWarehouseForm">
+                <input type="hidden" id="edit_warehouse_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_code" class="form-label">Depo Kodu *</label>
+                        <input type="text" class="form-control" id="edit_code" name="code" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Depo Adı *</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_address" class="form-label">Adres</label>
+                        <textarea class="form-control" id="edit_address" name="address" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active" checked>
+                            <label class="form-check-label" for="edit_is_active">
+                                Aktif
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Güncelle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// Configure axios for this page
+axios.defaults.baseURL = '/api';
+axios.defaults.withCredentials = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) {
+        alert('Lütfen önce giriş yapın!');
+        window.location.href = '/';
+        return;
+    }
+    
+    // Show/hide add button based on user role
+    const addButton = document.getElementById('add-warehouse-button');
+    if (user && (user.role === 'admin' || user.role === 'warehouse_manager')) {
+        addButton.style.display = 'block';
+    }
+    
+    loadWarehouses();
+});
+
+async function loadWarehouses() {
+    try {
+        const response = await axios.get('/warehouses');
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        
+        const warehouses = response.data.warehouses;
+        const tbody = document.getElementById('warehouses-table');
+        
+        if (warehouses.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Depo bulunamadı</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        warehouses.forEach(warehouse => {
+            html += `
+                <tr>
+                    <td><strong>${warehouse.code}</strong></td>
+                    <td>${warehouse.name}</td>
+                    <td>${warehouse.address || '-'}</td>
+                    <td>
+                        <span class="badge ${warehouse.is_active ? 'bg-success' : 'bg-secondary'}">
+                            ${warehouse.is_active ? 'Aktif' : 'Pasif'}
+                        </span>
+                    </td>
+                    <td>${new Date(warehouse.created_at).toLocaleDateString('tr-TR')}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            ${user && (user.role === 'admin' || user.role === 'warehouse_manager') ? 
+                                `<button class="btn btn-outline-primary" onclick="editWarehouse(${warehouse.id})" title="Düzenle">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteWarehouse(${warehouse.id})" title="Sil">
+                                    <i class="fas fa-trash"></i>
+                                </button>` : 
+                                '<span class="text-muted">Yetki yok</span>'
+                            }
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    } catch (error) {
+        console.error('Depolar yüklenemedi:', error);
+        document.getElementById('warehouses-table').innerHTML = '<tr><td colspan="6" class="text-center text-danger">Veri yüklenemedi</td></tr>';
+    }
+}
+
+function showAddWarehouseModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addWarehouseModal'));
+    modal.show();
+}
+
+document.getElementById('addWarehouseForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await axios.post('/warehouses', data);
+        
+        alert('Depo başarıyla eklendi!');
+        bootstrap.Modal.getInstance(document.getElementById('addWarehouseModal')).hide();
+        this.reset();
+        loadWarehouses();
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+});
+
+document.getElementById('editWarehouseForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    const warehouseId = data.id;
+    
+    // Remove id from data before sending
+    delete data.id;
+    
+    try {
+        const response = await axios.put(`/warehouses/${warehouseId}`, data);
+        
+        alert('Depo başarıyla güncellendi!');
+        bootstrap.Modal.getInstance(document.getElementById('editWarehouseModal')).hide();
+        loadWarehouses();
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+});
+
+async function editWarehouse(id) {
+    try {
+        const response = await axios.get(`/warehouses/${id}`);
+        const warehouse = response.data.warehouse;
+        
+        // Fill the edit form
+        document.getElementById('edit_warehouse_id').value = warehouse.id;
+        document.getElementById('edit_code').value = warehouse.code;
+        document.getElementById('edit_name').value = warehouse.name;
+        document.getElementById('edit_address').value = warehouse.address || '';
+        document.getElementById('edit_is_active').checked = warehouse.is_active;
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('editWarehouseModal'));
+        modal.show();
+    } catch (error) {
+        console.error('Depo bilgileri yüklenemedi:', error);
+        alert('Depo bilgileri yüklenemedi!');
+    }
+}
+
+async function deleteWarehouse(id) {
+    if (confirm('Bu depoyu silmek istediğinizden emin misiniz?')) {
+        try {
+            await axios.delete(`/warehouses/${id}`);
+            alert('Depo başarıyla silindi!');
+            loadWarehouses();
+        } catch (error) {
+            console.error('Depo silinemedi:', error);
+            alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+        }
+    }
+}
+</script>
+{% endblock %}
+

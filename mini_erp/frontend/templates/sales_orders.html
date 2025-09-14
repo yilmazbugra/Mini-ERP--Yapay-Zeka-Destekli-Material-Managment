@@ -1,0 +1,596 @@
+{% extends "base.html" %}
+
+{% block title %}Satış Siparişleri - Mini ERP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-shopping-bag me-2"></i>Satış Siparişleri</h2>
+            <button class="btn btn-primary" onclick="showAddOrderModal()">
+                <i class="fas fa-plus me-1"></i>Yeni Satış
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Satış No</th>
+                                <th>Müşteri</th>
+                                <th>Sipariş Tarihi</th>
+                                <th>Beklenen Tarih</th>
+                                <th>Durum</th>
+                                <th>Toplam</th>
+                                <th width="120">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Yükleniyor...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Order Modal -->
+<div class="modal fade" id="addOrderModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Satış Siparişi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addOrderForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="customer_id" class="form-label">Müşteri *</label>
+                                <select class="form-select" id="customer_id" name="customer_id" required>
+                                    <option value="">Seçiniz</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="order_no" class="form-label">Satış No *</label>
+                                <input type="text" class="form-control" id="order_no" name="order_no" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="order_date" class="form-label">Sipariş Tarihi *</label>
+                                <input type="date" class="form-control" id="order_date" name="order_date" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="expected_ship_date" class="form-label">Beklenen Sevkiyat Tarihi</label>
+                                <input type="date" class="form-control" id="expected_ship_date" name="expected_ship_date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="note" class="form-label">Not</label>
+                        <textarea class="form-control" id="note" name="note" rows="3"></textarea>
+                    </div>
+                    
+                    <!-- Product Lines Section -->
+                    <div class="mb-3">
+                        <label class="form-label">Ürünler</label>
+                        <div class="table-responsive">
+                            <table class="table table-sm" id="product-lines-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ürün</th>
+                                        <th>Miktar</th>
+                                        <th>Birim Fiyat</th>
+                                        <th>Toplam</th>
+                                        <th width="50"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="product-lines-tbody">
+                                    <!-- Product lines will be added here -->
+                                </tbody>
+                            </table>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-primary" onclick="addProductLine()">
+                            <i class="fas fa-plus me-1"></i>Ürün Ekle
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Order Detail Modal -->
+<div class="modal fade" id="orderDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Satış Siparişi Detayı</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="orderDetailContent">
+                <!-- Content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Kapat</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// Configure axios for this page
+axios.defaults.baseURL = '/api';
+axios.defaults.withCredentials = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) {
+        alert('Lütfen önce giriş yapın!');
+        window.location.href = '/';
+        return;
+    }
+    
+    loadOrders();
+    loadCustomers();
+    loadProducts();
+    
+    // Set today's date
+    document.getElementById('order_date').value = new Date().toISOString().split('T')[0];
+});
+
+async function loadOrders() {
+    try {
+        console.log('Loading sales orders...');
+        const response = await axios.get('/orders/sales');
+        console.log('Orders response:', response.data);
+        
+        const orders = response.data.orders;
+        const tbody = document.getElementById('orders-table');
+        
+        if (orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Sipariş bulunamadı</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        orders.forEach(order => {
+            // Debug: Check if order has ID
+            if (!order.id) {
+                console.error('Order missing ID:', order);
+                return;
+            }
+            
+            // Handle both string and enum status values
+            let status = order.status || 'Draft';
+            if (typeof status === 'object' && status.value) {
+                status = status.value;
+            } else if (typeof status === 'string' && status.includes('.')) {
+                // Handle enum values like "SalesOrderStatus.APPROVED"
+                status = status.split('.').pop();
+            }
+            
+            console.log('Order status:', status, 'Order:', order);
+            
+            // Turkish status translations
+            const statusTranslations = {
+                'DRAFT': 'Taslak',
+                'APPROVED': 'Onaylandı',
+                'PARTIALLY_SHIPPED': 'Kısmen Sevk Edildi',
+                'CLOSED': 'Kapatıldı'
+            };
+            
+            const statusClass = {
+                'DRAFT': 'bg-secondary',
+                'APPROVED': 'bg-primary',
+                'PARTIALLY_SHIPPED': 'bg-warning',
+                'CLOSED': 'bg-success'
+            }[status] || 'bg-secondary';
+            
+            const statusText = statusTranslations[status] || status;
+            
+            html += `
+                <tr>
+                    <td><strong>${order.order_no}</strong></td>
+                    <td>${order.customer?.name || 'Bilinmiyor'}</td>
+                    <td>${new Date(order.order_date).toLocaleDateString('tr-TR')}</td>
+                    <td>${order.expected_ship_date ? new Date(order.expected_ship_date).toLocaleDateString('tr-TR') : '-'}</td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td>${calculateOrderTotal(order)}</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="viewOrder(${order.id})" title="Görüntüle">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${status.toUpperCase() === 'DRAFT' ? 
+                                `<button class="btn btn-outline-success" onclick="approveOrder(${order.id})" title="Onayla">
+                                    <i class="fas fa-check"></i>
+                                </button>` : ''
+                            }
+                            ${status.toUpperCase() === 'APPROVED' ? 
+                                `<button class="btn btn-outline-warning" onclick="shipOrder(${order.id})" title="Sevkiyat">
+                                    <i class="fas fa-shipping-fast"></i>
+                                </button>` : ''
+                            }
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    } catch (error) {
+        console.error('Siparişler yüklenemedi:', error);
+        document.getElementById('orders-table').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Veri yüklenemedi</td></tr>';
+    }
+}
+
+async function loadCustomers() {
+    try {
+        console.log('Loading customers...');
+        const response = await axios.get('/customers');
+        console.log('Customers response:', response.data);
+        
+        const customers = response.data.customers;
+        const select = document.getElementById('customer_id');
+        
+        // Clear existing options except the first one
+        select.innerHTML = '<option value="">Seçiniz</option>';
+        
+        customers.forEach(customer => {
+            const option = document.createElement('option');
+            option.value = customer.id;
+            option.textContent = customer.name;
+            select.appendChild(option);
+        });
+        console.log('Customers loaded successfully');
+    } catch (error) {
+        console.error('Müşteriler yüklenemedi:', error);
+        console.error('Error details:', error.response?.data);
+        console.error('Error status:', error.response?.status);
+        // Show error in dropdown
+        const select = document.getElementById('customer_id');
+        select.innerHTML = '<option value="">Müşteriler yüklenemedi</option>';
+    }
+}
+
+// Global variables for products and product lines
+let products = [];
+let productLines = [];
+
+async function loadProducts() {
+    try {
+        console.log('Loading products...');
+        const response = await axios.get('/products');
+        console.log('Products response:', response.data);
+        
+        products = response.data.products || [];
+        console.log('Products loaded successfully');
+    } catch (error) {
+        console.error('Ürünler yüklenemedi:', error);
+        console.error('Error details:', error.response?.data);
+        console.error('Error status:', error.response?.status);
+    }
+}
+
+function addProductLine() {
+    const tbody = document.getElementById('product-lines-tbody');
+    const row = document.createElement('tr');
+    row.innerHTML = `
+        <td>
+            <select class="form-select form-select-sm product-select" onchange="updateProductLine(this)">
+                <option value="">Ürün Seçin</option>
+                ${products.map(product => 
+                    `<option value="${product.id}" data-price="${product.sale_price || 0}">${product.name} (${product.sku})</option>`
+                ).join('')}
+            </select>
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm qty-input" min="1" value="1" onchange="updateProductLine(this)">
+        </td>
+        <td>
+            <input type="number" class="form-control form-control-sm price-input" step="0.01" min="0" onchange="updateProductLine(this)">
+        </td>
+        <td>
+            <span class="total-price">0.00</span>
+        </td>
+        <td>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeProductLine(this)">
+                <i class="fas fa-trash"></i>
+            </button>
+        </td>
+    `;
+    tbody.appendChild(row);
+    productLines.push({
+        product_id: null,
+        qty: 1,
+        unit_price: 0,
+        total: 0
+    });
+}
+
+function updateProductLine(element) {
+    const row = element.closest('tr');
+    const productSelect = row.querySelector('.product-select');
+    const qtyInput = row.querySelector('.qty-input');
+    const priceInput = row.querySelector('.price-input');
+    const totalSpan = row.querySelector('.total-price');
+    
+    const productId = productSelect.value;
+    const qty = parseInt(qtyInput.value) || 0;
+    const price = parseFloat(priceInput.value) || 0;
+    
+    // Auto-fill price when product is selected
+    if (productId && !priceInput.value) {
+        const selectedOption = productSelect.querySelector(`option[value="${productId}"]`);
+        const productPrice = parseFloat(selectedOption.dataset.price) || 0;
+        priceInput.value = productPrice;
+    }
+    
+    const total = qty * price;
+    totalSpan.textContent = total.toFixed(2);
+    
+    // Update productLines array
+    const tbody = document.getElementById('product-lines-tbody');
+    const rowIndex = Array.from(tbody.children).indexOf(row);
+    if (productLines[rowIndex]) {
+        productLines[rowIndex] = {
+            product_id: productId ? parseInt(productId) : null,
+            qty: qty,
+            unit_price: price,
+            total: total
+        };
+    }
+}
+
+function removeProductLine(button) {
+    const row = button.closest('tr');
+    const tbody = document.getElementById('product-lines-tbody');
+    const rowIndex = Array.from(tbody.children).indexOf(row);
+    
+    productLines.splice(rowIndex, 1);
+    row.remove();
+}
+
+function showAddOrderModal() {
+    // Clear form
+    document.getElementById('addOrderForm').reset();
+    document.getElementById('order_date').value = new Date().toISOString().split('T')[0];
+    
+    // Clear product lines
+    productLines = [];
+    document.getElementById('product-lines-tbody').innerHTML = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('addOrderModal'));
+    modal.show();
+}
+
+document.getElementById('addOrderForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Get form data directly from form elements
+        const data = {
+            customer_id: document.getElementById('customer_id').value,
+            order_no: document.getElementById('order_no').value,
+            order_date: document.getElementById('order_date').value,
+            expected_ship_date: document.getElementById('expected_ship_date').value || null,
+            note: document.getElementById('note').value
+        };
+    
+    // Validate required fields first
+    if (!data.customer_id || data.customer_id === '') {
+        alert('Lütfen geçerli bir müşteri seçin!');
+        return;
+    }
+    
+    // Convert string values to proper types
+    data.customer_id = parseInt(data.customer_id);
+    
+    // Validate after conversion
+    if (isNaN(data.customer_id)) {
+        alert('Lütfen geçerli bir müşteri seçin!');
+        return;
+    }
+    
+    // Convert date strings to Date objects
+    if (data.order_date) {
+        data.order_date = new Date(data.order_date).toISOString().split('T')[0];
+    }
+    if (data.expected_ship_date) {
+        data.expected_ship_date = new Date(data.expected_ship_date).toISOString().split('T')[0];
+    }
+    
+    // Add product lines (remove total field as it's not in backend schema)
+    data.lines = productLines.filter(line => line.product_id && line.qty > 0).map(line => ({
+        product_id: line.product_id,
+        qty: line.qty,
+        unit_price: line.unit_price
+    }));
+    
+    console.log('Sending data:', data);
+    
+    if (!data.order_no || !data.order_no.trim()) {
+        alert('Lütfen sipariş numarası girin!');
+        return;
+    }
+    
+    if (!data.order_date) {
+        alert('Lütfen sipariş tarihi seçin!');
+        return;
+    }
+    
+    if (data.lines.length === 0) {
+        alert('Lütfen en az bir ürün ekleyin!');
+        return;
+    }
+    
+    try {
+        const response = await axios.post('/orders/sales', data, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        alert('Satış başarıyla oluşturuldu!');
+        bootstrap.Modal.getInstance(document.getElementById('addOrderModal')).hide();
+        this.reset();
+        loadOrders();
+    } catch (error) {
+        console.error('Sipariş oluşturma hatası:', error);
+        console.error('Error response:', error.response?.data);
+        const errorMessage = error.response?.data?.error || 'Bilinmeyen hata';
+        alert('Hata: ' + (typeof errorMessage === 'object' ? JSON.stringify(errorMessage) : errorMessage));
+    }
+});
+
+async function approveOrder(orderId) {
+    if (!orderId || orderId === 'undefined') {
+        alert('Geçersiz sipariş ID!');
+        return;
+    }
+    
+    if (!confirm('Bu siparişi onaylamak istediğinizden emin misiniz?')) {
+        return;
+    }
+    
+    try {
+        const response = await axios.post(`/orders/sales/${orderId}/approve`, {});
+        
+        alert('Satış başarıyla onaylandı!');
+        // Force reload the page to show updated status
+        setTimeout(() => {
+            loadOrders();
+        }, 500);
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+}
+
+async function shipOrder(orderId) {
+    if (!orderId || orderId === 'undefined') {
+        alert('Geçersiz sipariş ID!');
+        return;
+    }
+    
+    if (!confirm('Bu sipariş için sevkiyat işlemi yapmak istediğinizden emin misiniz?')) {
+        return;
+    }
+    
+    try {
+        const response = await axios.post(`/orders/sales/${orderId}/ship`, {});
+        
+        alert('Sevkiyat işlemi başarıyla tamamlandı!');
+        loadOrders();
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+}
+
+function calculateOrderTotal(order) {
+    if (!order.lines || order.lines.length === 0) {
+        return '0.00 ₺';
+    }
+    
+    const total = order.lines.reduce((sum, line) => {
+        return sum + (parseFloat(line.qty) * parseFloat(line.unit_price));
+    }, 0);
+    
+    return total.toFixed(2) + ' ₺';
+}
+
+async function viewOrder(orderId) {
+    try {
+        const response = await axios.get(`/orders/sales/${orderId}`);
+        const order = response.data.order;
+        
+        let linesHtml = '';
+        if (order.lines && order.lines.length > 0) {
+            linesHtml = order.lines.map(line => `
+                <tr>
+                    <td>${line.product?.name || 'Bilinmiyor'}</td>
+                    <td>${line.product?.sku || '-'}</td>
+                    <td>${line.qty}</td>
+                    <td>${parseFloat(line.unit_price).toFixed(2)} ₺</td>
+                    <td>${(line.qty * parseFloat(line.unit_price)).toFixed(2)} ₺</td>
+                </tr>
+            `).join('');
+        }
+        
+        const modalContent = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Müşteri Bilgileri</h6>
+                    <p><strong>Müşteri:</strong> ${order.customer?.name || 'Bilinmiyor'}</p>
+                    <p><strong>Sipariş No:</strong> ${order.order_no}</p>
+                    <p><strong>Tarih:</strong> ${new Date(order.order_date).toLocaleDateString('tr-TR')}</p>
+                    <p><strong>Durum:</strong> <span class="badge bg-primary">${order.status}</span></p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Sevkiyat Bilgileri</h6>
+                    <p><strong>Beklenen Tarih:</strong> ${order.expected_ship_date ? new Date(order.expected_ship_date).toLocaleDateString('tr-TR') : '-'}</p>
+                    <p><strong>Not:</strong> ${order.note || '-'}</p>
+                </div>
+            </div>
+            <hr>
+            <h6>Ürünler</h6>
+            <div class="table-responsive">
+                <table class="table table-sm">
+                    <thead>
+                        <tr>
+                            <th>Ürün</th>
+                            <th>SKU</th>
+                            <th>Miktar</th>
+                            <th>Birim Fiyat</th>
+                            <th>Toplam</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${linesHtml || '<tr><td colspan="5" class="text-center">Ürün bulunamadı</td></tr>'}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        document.getElementById('orderDetailContent').innerHTML = modalContent;
+        const modal = new bootstrap.Modal(document.getElementById('orderDetailModal'));
+        modal.show();
+    } catch (error) {
+        console.error('Sipariş detayları yüklenemedi:', error);
+        alert('Sipariş detayları yüklenemedi!');
+    }
+}
+</script>
+{% endblock %}

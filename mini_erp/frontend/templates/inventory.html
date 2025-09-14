@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Envanter - Mini ERP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2><i class="fas fa-warehouse me-2"></i>Envanter Durumu</h2>
+                <p class="text-muted">Tüm depolardaki stok durumu</p>
+            </div>
+            <button class="btn btn-primary" onclick="showTransferModal()">
+                <i class="fas fa-exchange-alt me-1"></i>Stok Transferi
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6">
+        <div class="input-group">
+            <span class="input-group-text"><i class="fas fa-search"></i></span>
+            <input type="text" class="form-control" id="searchInput" placeholder="Ürün ara...">
+        </div>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="warehouseFilter">
+            <option value="">Tüm Depolar</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="lowStockOnly">
+            <label class="form-check-label" for="lowStockOnly">
+                Sadece Kritik Stok
+            </label>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ürün</th>
+                                <th>Depo</th>
+                                <th>Eldeki Miktar</th>
+                                <th>Rezerve</th>
+                                <th>Kullanılabilir</th>
+                                <th>Min. Stok</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventory-table">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Yükleniyor...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Stock Transfer Modal -->
+<div class="modal fade" id="transferModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Stok Transferi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="transferForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="transfer_product_id" class="form-label">Ürün *</label>
+                        <select class="form-select" id="transfer_product_id" name="product_id" required>
+                            <option value="">Seçiniz</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="from_warehouse_id" class="form-label">Kaynak Depo *</label>
+                                <select class="form-select" id="from_warehouse_id" name="from_warehouse_id" required>
+                                    <option value="">Seçiniz</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="to_warehouse_id" class="form-label">Hedef Depo *</label>
+                                <select class="form-select" id="to_warehouse_id" name="to_warehouse_id" required>
+                                    <option value="">Seçiniz</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="transfer_quantity" class="form-label">Miktar *</label>
+                        <input type="number" class="form-control" id="transfer_quantity" name="quantity" required min="1">
+                    </div>
+                    <div class="mb-3">
+                        <label for="transfer_note" class="form-label">Not</label>
+                        <textarea class="form-control" id="transfer_note" name="note" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Transfer Et</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// Configure axios for this page
+axios.defaults.baseURL = '/api';
+axios.defaults.withCredentials = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) {
+        alert('Lütfen önce giriş yapın!');
+        window.location.href = '/';
+        return;
+    }
+    
+    loadInventory();
+    loadWarehouses();
+    loadProducts();
+    
+    document.getElementById('searchInput').addEventListener('input', filterInventory);
+    document.getElementById('warehouseFilter').addEventListener('change', filterInventory);
+    document.getElementById('lowStockOnly').addEventListener('change', filterInventory);
+    
+    // Transfer form submission
+    document.getElementById('transferForm').addEventListener('submit', handleTransfer);
+});
+
+async function loadInventory() {
+    try {
+        const response = await axios.get('/stock/inventory');
+        
+        window.inventoryData = response.data.inventory_balances;
+        displayInventory(window.inventoryData);
+    } catch (error) {
+        console.error('Envanter yüklenemedi:', error);
+        document.getElementById('inventory-table').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Veri yüklenemedi</td></tr>';
+    }
+}
+
+async function loadWarehouses() {
+    try {
+        const response = await axios.get('/warehouses');
+        
+        const warehouses = response.data.warehouses;
+        const select = document.getElementById('warehouseFilter');
+        
+        warehouses.forEach(warehouse => {
+            const option = document.createElement('option');
+            option.value = warehouse.id;
+            option.textContent = warehouse.name;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Depolar yüklenemedi:', error);
+    }
+}
+
+function displayInventory(data) {
+    const tbody = document.getElementById('inventory-table');
+    
+    if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Veri bulunamadı</td></tr>';
+        return;
+    }
+    
+    let html = '';
+    data.forEach(item => {
+        const isLowStock = item.available_qty <= item.product.reorder_point;
+        const statusClass = isLowStock ? 'text-danger' : 'text-success';
+        const statusText = isLowStock ? 'Kritik' : 'Normal';
+        
+        html += `
+            <tr class="${isLowStock ? 'table-warning' : ''}">
+                <td>
+                    <strong>${item.product.sku}</strong><br>
+                    <small class="text-muted">${item.product.name}</small>
+                </td>
+                <td>${item.warehouse.name}</td>
+                <td>${item.on_hand_qty} ${item.product.unit}</td>
+                <td>${item.reserved_qty} ${item.product.unit}</td>
+                <td><strong>${item.available_qty} ${item.product.unit}</strong></td>
+                <td>${item.product.reorder_point} ${item.product.unit}</td>
+                <td>
+                    <span class="badge ${isLowStock ? 'bg-danger' : 'bg-success'}">
+                        ${statusText}
+                    </span>
+                </td>
+            </tr>
+        `;
+    });
+    
+    tbody.innerHTML = html;
+}
+
+function filterInventory() {
+    if (!window.inventoryData) return;
+    
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const warehouseId = document.getElementById('warehouseFilter').value;
+    const lowStockOnly = document.getElementById('lowStockOnly').checked;
+    
+    let filteredData = window.inventoryData.filter(item => {
+        const matchesSearch = item.product.sku.toLowerCase().includes(searchTerm) ||
+                            item.product.name.toLowerCase().includes(searchTerm);
+        const matchesWarehouse = !warehouseId || item.warehouse.id == warehouseId;
+        const matchesLowStock = !lowStockOnly || item.available_qty <= item.product.reorder_point;
+        
+        return matchesSearch && matchesWarehouse && matchesLowStock;
+    });
+    
+    displayInventory(filteredData);
+}
+
+async function loadProducts() {
+    try {
+        const response = await axios.get('/products');
+        
+        const products = response.data.products;
+        const select = document.getElementById('transfer_product_id');
+        
+        products.forEach(product => {
+            const option = document.createElement('option');
+            option.value = product.id;
+            option.textContent = `${product.sku} - ${product.name}`;
+            select.appendChild(option);
+        });
+    } catch (error) {
+        console.error('Ürünler yüklenemedi:', error);
+    }
+}
+
+function showTransferModal() {
+    // Populate warehouse dropdowns
+    const warehouseSelect = document.getElementById('warehouseFilter');
+    const fromSelect = document.getElementById('from_warehouse_id');
+    const toSelect = document.getElementById('to_warehouse_id');
+    
+    // Clear existing options
+    fromSelect.innerHTML = '<option value="">Seçiniz</option>';
+    toSelect.innerHTML = '<option value="">Seçiniz</option>';
+    
+    // Copy warehouse options
+    Array.from(warehouseSelect.options).forEach(option => {
+        if (option.value) {
+            const fromOption = option.cloneNode(true);
+            const toOption = option.cloneNode(true);
+            fromSelect.appendChild(fromOption);
+            toSelect.appendChild(toOption);
+        }
+    });
+    
+    const modal = new bootstrap.Modal(document.getElementById('transferModal'));
+    modal.show();
+}
+
+async function handleTransfer(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const data = Object.fromEntries(formData.entries());
+    
+    // Validate
+    if (data.from_warehouse_id === data.to_warehouse_id) {
+        alert('Kaynak ve hedef depo aynı olamaz!');
+        return;
+    }
+    
+    try {
+        const response = await axios.post('/stock/transfer', data);
+        
+        alert('Stok transferi başarıyla tamamlandı!');
+        bootstrap.Modal.getInstance(document.getElementById('transferModal')).hide();
+        e.target.reset();
+        loadInventory(); // Refresh inventory
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+}
+</script>
+{% endblock %}

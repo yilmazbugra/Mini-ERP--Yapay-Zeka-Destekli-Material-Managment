@@ -1,0 +1,345 @@
+{% extends "base.html" %}
+
+{% block title %}Ürünler - Mini ERP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-boxes me-2"></i>Ürünler</h2>
+            <div id="add-product-button" style="display: none;">
+                <button class="btn btn-primary" onclick="showAddProductModal()">
+                    <i class="fas fa-plus me-1"></i>Yeni Ürün
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>SKU</th>
+                                <th>Ürün Adı</th>
+                                <th>Kategori</th>
+                                <th>Birim</th>
+                                <th>Barkod</th>
+                                <th>Min. Stok</th>
+                                <th>Güvenlik Stoku</th>
+                                <th>Durum</th>
+                                <th width="120">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="products-table">
+                            <tr>
+                                <td colspan="9" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Yükleniyor...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Product Modal -->
+<div class="modal fade" id="addProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Ürün Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addProductForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="sku" class="form-label">SKU *</label>
+                        <input type="text" class="form-control" id="sku" name="sku" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Ürün Adı *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Kategori</label>
+                        <input type="text" class="form-control" id="category" name="category">
+                    </div>
+                    <div class="mb-3">
+                        <label for="unit" class="form-label">Birim *</label>
+                        <select class="form-select" id="unit" name="unit" required>
+                            <option value="">Seçiniz</option>
+                            <option value="adet">Adet</option>
+                            <option value="kg">Kilogram</option>
+                            <option value="m">Metre</option>
+                            <option value="lt">Litre</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="barcode" class="form-label">Barkod</label>
+                        <input type="text" class="form-control" id="barcode" name="barcode">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="reorder_point" class="form-label">Min. Stok</label>
+                                <input type="number" class="form-control" id="reorder_point" name="reorder_point" value="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="safety_stock" class="form-label">Güvenlik Stoku</label>
+                                <input type="number" class="form-control" id="safety_stock" name="safety_stock" value="0">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Product Modal -->
+<div class="modal fade" id="editProductModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Ürün Düzenle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editProductForm">
+                <input type="hidden" id="edit_product_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_sku" class="form-label">SKU *</label>
+                        <input type="text" class="form-control" id="edit_sku" name="sku" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Ürün Adı *</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_category" class="form-label">Kategori</label>
+                        <input type="text" class="form-control" id="edit_category" name="category">
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_unit" class="form-label">Birim *</label>
+                        <select class="form-select" id="edit_unit" name="unit" required>
+                            <option value="">Seçiniz</option>
+                            <option value="adet">Adet</option>
+                            <option value="kg">Kilogram</option>
+                            <option value="m">Metre</option>
+                            <option value="lt">Litre</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_barcode" class="form-label">Barkod</label>
+                        <input type="text" class="form-control" id="edit_barcode" name="barcode">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_reorder_point" class="form-label">Min. Stok</label>
+                                <input type="number" class="form-control" id="edit_reorder_point" name="reorder_point" value="0">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_safety_stock" class="form-label">Güvenlik Stoku</label>
+                                <input type="number" class="form-control" id="edit_safety_stock" name="safety_stock" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active" checked>
+                            <label class="form-check-label" for="edit_is_active">
+                                Aktif
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Güncelle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// Configure axios for this page
+axios.defaults.baseURL = '/api';
+axios.defaults.withCredentials = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) {
+        alert('Lütfen önce giriş yapın!');
+        window.location.href = '/';
+        return;
+    }
+    
+    // Show/hide add button based on user role
+    const addButton = document.getElementById('add-product-button');
+    if (user && (user.role === 'admin' || user.role === 'warehouse_manager')) {
+        addButton.style.display = 'block';
+    }
+    
+    loadProducts();
+});
+
+async function loadProducts() {
+    try {
+        const response = await axios.get('/products');
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        
+        const products = response.data.products;
+        const tbody = document.getElementById('products-table');
+        
+        if (products.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Ürün bulunamadı</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        products.forEach(product => {
+            html += `
+                <tr>
+                    <td><strong>${product.sku}</strong></td>
+                    <td>${product.name}</td>
+                    <td>${product.category || '-'}</td>
+                    <td>${product.unit}</td>
+                    <td>${product.barcode || '-'}</td>
+                    <td>${product.reorder_point}</td>
+                    <td>${product.safety_stock}</td>
+                    <td>
+                        <span class="badge ${product.is_active ? 'bg-success' : 'bg-secondary'}">
+                            ${product.is_active ? 'Aktif' : 'Pasif'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            ${user && (user.role === 'admin' || user.role === 'warehouse_manager') ? 
+                                `<button class="btn btn-outline-primary" onclick="editProduct(${product.id})" title="Düzenle">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteProduct(${product.id})" title="Sil">
+                                    <i class="fas fa-trash"></i>
+                                </button>` : 
+                                '<span class="text-muted">Yetki yok</span>'
+                            }
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    } catch (error) {
+        console.error('Ürünler yüklenemedi:', error);
+        document.getElementById('products-table').innerHTML = '<tr><td colspan="9" class="text-center text-danger">Veri yüklenemedi</td></tr>';
+    }
+}
+
+function showAddProductModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addProductModal'));
+    modal.show();
+}
+
+document.getElementById('addProductForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await axios.post('/products', data);
+        
+        alert('Ürün başarıyla eklendi!');
+        bootstrap.Modal.getInstance(document.getElementById('addProductModal')).hide();
+        this.reset();
+        loadProducts();
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+});
+
+document.getElementById('editProductForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    const productId = data.id;
+    
+    // Remove id from data before sending
+    delete data.id;
+    
+    try {
+        const response = await axios.put(`/products/${productId}`, data);
+        
+        alert('Ürün başarıyla güncellendi!');
+        bootstrap.Modal.getInstance(document.getElementById('editProductModal')).hide();
+        loadProducts();
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+});
+
+async function editProduct(id) {
+    try {
+        const response = await axios.get(`/products/${id}`);
+        const product = response.data.product;
+        
+        // Fill the edit form
+        document.getElementById('edit_product_id').value = product.id;
+        document.getElementById('edit_sku').value = product.sku;
+        document.getElementById('edit_name').value = product.name;
+        document.getElementById('edit_category').value = product.category || '';
+        document.getElementById('edit_unit').value = product.unit;
+        document.getElementById('edit_barcode').value = product.barcode || '';
+        document.getElementById('edit_reorder_point').value = product.reorder_point;
+        document.getElementById('edit_safety_stock').value = product.safety_stock;
+        document.getElementById('edit_is_active').checked = product.is_active;
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('editProductModal'));
+        modal.show();
+    } catch (error) {
+        console.error('Ürün bilgileri yüklenemedi:', error);
+        alert('Ürün bilgileri yüklenemedi!');
+    }
+}
+
+async function deleteProduct(id) {
+    if (confirm('Bu ürünü silmek istediğinizden emin misiniz?')) {
+        try {
+            await axios.delete(`/products/${id}`);
+            alert('Ürün başarıyla silindi!');
+            loadProducts();
+        } catch (error) {
+            console.error('Ürün silinemedi:', error);
+            alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+        }
+    }
+}
+</script>
+{% endblock %}
+

@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Müşteriler - Mini ERP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-users me-2"></i>Müşteriler</h2>
+            <div id="add-customer-button" style="display: none;">
+                <button class="btn btn-primary" onclick="showAddCustomerModal()">
+                    <i class="fas fa-plus me-1"></i>Yeni Müşteri
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ad</th>
+                                <th>Vergi No</th>
+                                <th>Telefon</th>
+                                <th>E-posta</th>
+                                <th>Adres</th>
+                                <th>Durum</th>
+                                <th width="120">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customers-table">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Yükleniyor...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Customer Modal -->
+<div class="modal fade" id="addCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Müşteri Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addCustomerForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Müşteri Adı *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tax_no" class="form-label">Vergi No</label>
+                        <input type="text" class="form-control" id="tax_no" name="tax_no">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Telefon</label>
+                                <input type="text" class="form-control" id="phone" name="phone">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">E-posta</label>
+                                <input type="email" class="form-control" id="email" name="email">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Adres</label>
+                        <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Customer Modal -->
+<div class="modal fade" id="editCustomerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Müşteri Düzenle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editCustomerForm">
+                <input type="hidden" id="edit_customer_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Müşteri Adı *</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_tax_no" class="form-label">Vergi No</label>
+                        <input type="text" class="form-control" id="edit_tax_no" name="tax_no">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_phone" class="form-label">Telefon</label>
+                                <input type="text" class="form-control" id="edit_phone" name="phone">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_email" class="form-label">E-posta</label>
+                                <input type="email" class="form-control" id="edit_email" name="email">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_address" class="form-label">Adres</label>
+                        <textarea class="form-control" id="edit_address" name="address" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active" checked>
+                            <label class="form-check-label" for="edit_is_active">
+                                Aktif
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Güncelle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// Configure axios for this page
+// axios.defaults.baseURL = '/api'; // Removed to avoid double /api/
+axios.defaults.withCredentials = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) {
+        alert('Lütfen önce giriş yapın!');
+        window.location.href = '/';
+        return;
+    }
+    
+    // Show/hide add button based on user role
+    const addButton = document.getElementById('add-customer-button');
+    if (user && (user.role === 'admin' || user.role === 'warehouse_manager')) {
+        addButton.style.display = 'block';
+    }
+    
+    loadCustomers();
+});
+
+async function loadCustomers() {
+    try {
+        const response = await axios.get('/api/customers');
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        
+        const customers = response.data.customers;
+        const tbody = document.getElementById('customers-table');
+        
+        if (customers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Müşteri bulunamadı</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        customers.forEach(customer => {
+            html += `
+                <tr>
+                    <td><strong>${customer.name}</strong></td>
+                    <td>${customer.tax_no || '-'}</td>
+                    <td>${customer.phone || '-'}</td>
+                    <td>${customer.email || '-'}</td>
+                    <td>${customer.address || '-'}</td>
+                    <td>
+                        <span class="badge ${customer.is_active ? 'bg-success' : 'bg-secondary'}">
+                            ${customer.is_active ? 'Aktif' : 'Pasif'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            ${user && (user.role === 'admin' || user.role === 'warehouse_manager') ? 
+                                `<button class="btn btn-outline-primary" onclick="editCustomer(${customer.id})" title="Düzenle">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteCustomer(${customer.id})" title="Sil">
+                                    <i class="fas fa-trash"></i>
+                                </button>` : 
+                                '<span class="text-muted">Yetki yok</span>'
+                            }
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    } catch (error) {
+        console.error('Müşteriler yüklenemedi:', error);
+        document.getElementById('customers-table').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Veri yüklenemedi</td></tr>';
+    }
+}
+
+function showAddCustomerModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addCustomerModal'));
+    modal.show();
+}
+
+document.getElementById('addCustomerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await axios.post('/api/customers', data, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        alert('Müşteri başarıyla eklendi!');
+        bootstrap.Modal.getInstance(document.getElementById('addCustomerModal')).hide();
+        this.reset();
+        loadCustomers();
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+});
+
+document.getElementById('editCustomerForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    const customerId = data.id;
+    
+    // Remove id from data before sending
+    delete data.id;
+    
+    try {
+        const response = await axios.put(`/api/customers/${customerId}`, data, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        alert('Müşteri başarıyla güncellendi!');
+        bootstrap.Modal.getInstance(document.getElementById('editCustomerModal')).hide();
+        loadCustomers();
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+});
+
+async function editCustomer(id) {
+    try {
+        const response = await axios.get(`/api/customers/${id}`);
+        const customer = response.data.customer;
+        
+        // Fill the edit form
+        document.getElementById('edit_customer_id').value = customer.id;
+        document.getElementById('edit_name').value = customer.name;
+        document.getElementById('edit_tax_no').value = customer.tax_no || '';
+        document.getElementById('edit_phone').value = customer.phone || '';
+        document.getElementById('edit_email').value = customer.email || '';
+        document.getElementById('edit_address').value = customer.address || '';
+        document.getElementById('edit_is_active').checked = customer.is_active;
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('editCustomerModal'));
+        modal.show();
+    } catch (error) {
+        console.error('Müşteri bilgileri yüklenemedi:', error);
+        alert('Müşteri bilgileri yüklenemedi!');
+    }
+}
+
+async function deleteCustomer(id) {
+    if (confirm('Bu müşteriyi silmek istediğinizden emin misiniz?')) {
+        try {
+            await axios.delete(`/api/customers/${id}`);
+            alert('Müşteri başarıyla silindi!');
+            loadCustomers();
+        } catch (error) {
+            console.error('Müşteri silinemedi:', error);
+            alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+        }
+    }
+}
+</script>
+{% endblock %}
+

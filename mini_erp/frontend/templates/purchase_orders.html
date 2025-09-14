@@ -1,0 +1,945 @@
+{% extends "base.html" %}
+
+{% block title %}Satın Alma Siparişleri - Mini ERP{% endblock %}
+
+{% block extra_css %}
+<style>
+.product-select.is-invalid {
+    border-color: #dc3545;
+    box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+}
+
+.product-select.is-valid {
+    border-color: #28a745;
+    box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+}
+
+.order-line-item {
+    transition: all 0.3s ease;
+}
+
+.order-line-item:hover {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-shopping-cart me-2"></i>Satın Alma Siparişleri</h2>
+            <button class="btn btn-primary" onclick="showAddOrderModal()">
+                <i class="fas fa-plus me-1"></i>Yeni Sipariş
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Sipariş No</th>
+                                <th>Tedarikçi</th>
+                                <th>Sipariş Tarihi</th>
+                                <th>Beklenen Tarih</th>
+                                <th>Durum</th>
+                                <th>Toplam</th>
+                                <th width="120">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="orders-table">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Yükleniyor...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Order Modal -->
+<div class="modal fade" id="addOrderModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Satın Alma Siparişi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addOrderForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="supplier_id" class="form-label">Tedarikçi *</label>
+                                <select class="form-select" id="supplier_id" name="supplier_id" required>
+                                    <option value="">Seçiniz</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="order_no" class="form-label">Sipariş No *</label>
+                                <input type="text" class="form-control" id="order_no" name="order_no" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="order_date" class="form-label">Sipariş Tarihi *</label>
+                                <input type="date" class="form-control" id="order_date" name="order_date" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="expected_date" class="form-label">Beklenen Tarih</label>
+                                <input type="date" class="form-control" id="expected_date" name="expected_date">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="note" class="form-label">Not</label>
+                        <textarea class="form-control" id="note" name="note" rows="3"></textarea>
+                    </div>
+                    
+                    <!-- Order Lines Section -->
+                    <div class="mb-3">
+                        <label class="form-label">Sipariş Kalemleri</label>
+                        <div id="order-lines-container">
+                            <div class="order-line-item border p-3 mb-2 rounded">
+                                <div class="row">
+                                    <div class="col-md-4">
+                                        <label class="form-label">Ürün</label>
+                                        <select class="form-select product-select" name="product_id[]" required>
+                                            <option value="">Ürün seçin</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">Miktar</label>
+                                        <input type="number" class="form-control qty-input" name="qty[]" min="1" required>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Birim Fiyat</label>
+                                        <input type="number" class="form-control unit-price-input" name="unit_price[]" step="0.01" min="0" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">&nbsp;</label>
+                                        <button type="button" class="btn btn-danger btn-sm w-100 remove-line" style="display: none;">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="add-line">
+                            <i class="fas fa-plus me-1"></i>Kalem Ekle
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Mal Kabul Modal -->
+<div class="modal fade" id="receiveOrderModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Mal Kabul İşlemi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="receiveOrderForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="receive_line_id" class="form-label">Sipariş Kalemi</label>
+                        <select class="form-control" id="receive_line_id" name="line_id" required>
+                            <option value="">Sipariş kalemi seçin</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="qty-section" style="display: none;">
+                        <label for="receive_qty" class="form-label">Kabul Edilen Miktar</label>
+                        <input type="number" class="form-control" id="receive_qty" name="received_qty" min="1" required>
+                        <div class="form-text" id="qty-info"></div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="receive_warehouse_id" class="form-label">Depo</label>
+                        <select class="form-control" id="receive_warehouse_id" name="warehouse_id" required>
+                            <option value="">Depo seçin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Mal Kabul Et</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// Set correct API base URL and credentials
+axios.defaults.baseURL = '/api';
+axios.defaults.withCredentials = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) {
+        alert('Lütfen önce giriş yapın!');
+        window.location.href = '/';
+        return;
+    }
+    
+    try {
+        loadOrders();
+        loadSuppliers();
+        
+        // Set today's date
+        document.getElementById('order_date').value = new Date().toISOString().split('T')[0];
+    } catch (error) {
+        console.error('Sayfa yükleme hatası:', error);
+    }
+    
+    // Add line functionality
+    document.getElementById('add-line').addEventListener('click', addOrderLine);
+    
+    // Remove line functionality
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-line')) {
+            e.target.closest('.order-line-item').remove();
+            updateRemoveButtons();
+        }
+    });
+    
+    // Mal kabul form submit event
+    document.getElementById('receiveOrderForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const data = Object.fromEntries(formData.entries());
+        
+        console.log('Form data before processing:', data);
+        console.log('Current receive order ID:', window.currentReceiveOrderId);
+        
+        // Convert to proper types
+        data.line_id = parseInt(data.line_id);
+        data.received_qty = parseInt(data.received_qty);
+        data.warehouse_id = parseInt(data.warehouse_id);
+        
+        console.log('Processed data:', data);
+        console.log('line_id:', data.line_id, 'type:', typeof data.line_id);
+        console.log('received_qty:', data.received_qty, 'type:', typeof data.received_qty);
+        console.log('warehouse_id:', data.warehouse_id, 'type:', typeof data.warehouse_id);
+        
+        // Validate required fields
+        if (!data.line_id || isNaN(data.line_id)) {
+            alert('Lütfen bir sipariş kalemi seçin!');
+            return;
+        }
+        
+        if (!data.received_qty || isNaN(data.received_qty) || data.received_qty <= 0) {
+            alert('Lütfen geçerli bir miktar girin!');
+            return;
+        }
+        
+        if (!data.warehouse_id || isNaN(data.warehouse_id)) {
+            console.error('Warehouse validation failed:', data.warehouse_id);
+            alert('Lütfen bir depo seçin! Depo listesi yüklenmemiş olabilir.');
+            return;
+        }
+        
+        try {
+            console.log('Sending request to:', `/orders/purchase/${window.currentReceiveOrderId}/receive`);
+            const response = await axios.post(`/orders/purchase/${window.currentReceiveOrderId}/receive`, data);
+            
+            alert('Mal kabul işlemi başarıyla tamamlandı!');
+            bootstrap.Modal.getInstance(document.getElementById('receiveOrderModal')).hide();
+            this.reset();
+            loadOrders();
+        } catch (error) {
+            console.error('Mal kabul hatası:', error);
+            console.error('Error response:', error.response);
+            alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+        }
+    });
+    
+    // Sipariş kalemi seçildiğinde miktar alanını göster
+    document.getElementById('receive_line_id').addEventListener('change', function() {
+        const qtySection = document.getElementById('qty-section');
+        const qtyInput = document.getElementById('receive_qty');
+        const qtyInfo = document.getElementById('qty-info');
+        
+        if (this.value) {
+            // Kalem seçildi, miktar alanını göster
+            qtySection.style.display = 'block';
+            
+            // Seçilen kalemin bilgilerini al ve göster
+            const selectedOption = this.options[this.selectedIndex];
+            const optionText = selectedOption.textContent;
+            
+            // Option text'ten miktar bilgisini çıkar (örn: "Laptop Bilgisayar - Miktar: 10 - Birim Fiyat: 100")
+            const qtyMatch = optionText.match(/Miktar:\s*(\d+)/);
+            const priceMatch = optionText.match(/Birim Fiyat:\s*([\d.]+)/);
+            
+            if (qtyMatch) {
+                const totalQty = parseInt(qtyMatch[1]);
+                qtyInput.max = totalQty;
+                qtyInput.placeholder = `Maksimum: ${totalQty}`;
+                
+                if (priceMatch) {
+                    const unitPrice = parseFloat(priceMatch[1]);
+                    qtyInfo.innerHTML = `
+                        <strong>Toplam Miktar:</strong> ${totalQty} adet<br>
+                        <strong>Birim Fiyat:</strong> ${unitPrice.toFixed(2)} ₺
+                    `;
+                } else {
+                    qtyInfo.innerHTML = `<strong>Toplam Miktar:</strong> ${totalQty} adet`;
+                }
+            }
+            
+            // Miktar alanını temizle
+            qtyInput.value = '';
+        } else {
+            // Kalem seçilmedi, miktar alanını gizle
+            qtySection.style.display = 'none';
+            qtyInput.value = '';
+            qtyInfo.innerHTML = '';
+        }
+    });
+});
+
+async function loadOrders() {
+    try {
+        const response = await axios.get('/orders/purchase');
+        
+        const orders = response.data.orders;
+        const tbody = document.getElementById('orders-table');
+        
+        if (orders.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Sipariş bulunamadı</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        orders.forEach(order => {
+            // Debug: Check if order has ID
+            if (!order.id) {
+                console.error('Order missing ID:', order);
+                return;
+            }
+            
+            // Handle both string and enum status values
+            let status = order.status || 'Draft';
+            if (typeof status === 'object' && status.value) {
+                status = status.value;
+            } else if (typeof status === 'string' && status.includes('.')) {
+                // Handle enum values like "PurchaseOrderStatus.APPROVED"
+                status = status.split('.').pop();
+            }
+            
+            // Normalize status for comparison (keep original case for display)
+            const statusForComparison = status.toUpperCase();
+            
+            // Turkish status translations
+            const statusTranslations = {
+                'DRAFT': 'Taslak',
+                'APPROVED': 'Onaylandı',
+                'PARTIALLY_RECEIVED': 'Kısmen Alındı',
+                'CLOSED': 'Kapatıldı'
+            };
+            
+            const statusClass = {
+                'DRAFT': 'bg-secondary',
+                'APPROVED': 'bg-primary',
+                'PARTIALLY_RECEIVED': 'bg-warning',
+                'CLOSED': 'bg-success'
+            }[statusForComparison] || 'bg-secondary';
+            
+            const statusText = statusTranslations[statusForComparison] || status;
+            
+            html += `
+                <tr>
+                    <td><strong>${order.order_no}</strong></td>
+                    <td>${order.supplier?.name || 'Bilinmiyor'}</td>
+                    <td>${new Date(order.order_date).toLocaleDateString('tr-TR')}</td>
+                    <td>${order.expected_date ? new Date(order.expected_date).toLocaleDateString('tr-TR') : '-'}</td>
+                    <td>
+                        <span class="badge ${statusClass}">
+                            ${statusText}
+                        </span>
+                    </td>
+                    <td>-</td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-primary" onclick="viewOrder(${order.id})" title="Görüntüle">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            ${statusForComparison === 'DRAFT' ? 
+                                `<button class="btn btn-outline-success" onclick="approveOrder(${order.id})" title="Onayla">
+                                    <i class="fas fa-check"></i>
+                                </button>` : ''
+                            }
+                            ${statusForComparison === 'APPROVED' ? 
+                                `<button class="btn btn-outline-warning" onclick="receiveOrder(${order.id})" title="Mal Kabul">
+                                    <i class="fas fa-truck"></i>
+                                </button>` : ''
+                            }
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    } catch (error) {
+        console.error('Siparişler yüklenemedi:', error);
+        console.error('Error details:', error.response);
+        document.getElementById('orders-table').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Veri yüklenemedi: ' + (error.message || 'Bilinmeyen hata') + '</td></tr>';
+    }
+}
+
+async function loadSuppliers() {
+    try {
+        const response = await axios.get('/suppliers');
+        
+        const suppliers = response.data.suppliers;
+        const select = document.getElementById('supplier_id');
+        
+        // Clear existing options except the first one
+        select.innerHTML = '<option value="">Seçiniz</option>';
+        
+        console.log('Tedarikçiler yüklendi:', suppliers);
+        
+        suppliers.forEach(supplier => {
+            const option = document.createElement('option');
+            option.value = supplier.id || supplier.supplier_id || 'unknown';
+            option.textContent = supplier.name;
+            select.appendChild(option);
+            console.log('Supplier option:', supplier.id, supplier.name);
+        });
+        
+        console.log('Tedarikçi dropdown dolduruldu');
+    } catch (error) {
+        console.error('Tedarikçiler yüklenemedi:', error);
+        // Show error in dropdown
+        const select = document.getElementById('supplier_id');
+        select.innerHTML = '<option value="">Tedarikçiler yüklenemedi</option>';
+    }
+}
+
+async function loadProducts() {
+    try {
+        const response = await axios.get('/products');
+        
+        const products = response.data.products;
+        const selects = document.querySelectorAll('.product-select');
+        
+        // Only process if there are selects on the page
+        if (selects.length > 0) {
+            selects.forEach(select => {
+                // Clear existing options except the first one
+                select.innerHTML = '<option value="">Ürün seçin</option>';
+                
+                products.forEach(product => {
+                    const option = document.createElement('option');
+                    option.value = product.id;
+                    option.textContent = `${product.name} (${product.sku})`;
+                    select.appendChild(option);
+                });
+            });
+        }
+        
+        console.log('Ürünler yüklendi:', products.length);
+    } catch (error) {
+        console.error('Ürünler yüklenemedi:', error);
+    }
+}
+
+function addOrderLine() {
+    const container = document.getElementById('order-lines-container');
+    const newLine = document.createElement('div');
+    newLine.className = 'order-line-item border p-3 mb-2 rounded';
+    newLine.innerHTML = `
+        <div class="row">
+            <div class="col-md-4">
+                <label class="form-label">Ürün</label>
+                <select class="form-select product-select" name="product_id[]" required>
+                    <option value="">Ürün seçin</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Miktar</label>
+                <input type="number" class="form-control qty-input" name="qty[]" min="1" required>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Birim Fiyat</label>
+                <input type="number" class="form-control unit-price-input" name="unit_price[]" step="0.01" min="0" required>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <button type="button" class="btn btn-danger btn-sm w-100 remove-line">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `;
+    
+    container.appendChild(newLine);
+    
+    // Load products for the new select
+    loadProductsForSelect(newLine.querySelector('.product-select'));
+    updateRemoveButtons();
+}
+
+function loadProductsForSelect(select) {
+    if (!select) {
+        console.error('Select element not found!');
+        return;
+    }
+    
+    console.log('Loading products for select...');
+    axios.get('/products').then(response => {
+        console.log('Products response:', response.data);
+        const products = response.data.products;
+        select.innerHTML = '<option value="">Ürün seçin</option>';
+        
+        console.log('Found products:', products.length);
+        products.forEach((product, index) => {
+            console.log(`Product ${index}:`, product);
+            const option = document.createElement('option');
+            option.value = product.id;
+            option.textContent = `${product.name} (${product.sku})`;
+            select.appendChild(option);
+            console.log(`Created option with value: ${product.id}, text: ${product.name} (${product.sku})`);
+        });
+        
+        // Add change event listener to highlight when product is selected
+        select.addEventListener('change', function() {
+            if (this.value && this.value !== '') {
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                this.classList.remove('is-valid');
+                this.classList.add('is-invalid');
+            }
+        });
+        console.log('Products loaded successfully');
+        console.log('Final select options:', Array.from(select.options).map(opt => ({value: opt.value, text: opt.text})));
+        
+        // Mark this select as loaded
+        select.setAttribute('data-loaded', 'true');
+    }).catch(error => {
+        console.error('Ürünler yüklenemedi:', error);
+        select.innerHTML = '<option value="">Ürün yüklenemedi</option>';
+    });
+}
+
+function updateRemoveButtons() {
+    const lines = document.querySelectorAll('.order-line-item');
+    lines.forEach((line, index) => {
+        const removeBtn = line.querySelector('.remove-line');
+        if (lines.length > 1) {
+            removeBtn.style.display = 'block';
+        } else {
+            removeBtn.style.display = 'none';
+        }
+    });
+}
+
+function showAddOrderModal() {
+    // Reset form
+    document.getElementById('addOrderForm').reset();
+    
+    // Reset order lines to single empty line
+    const container = document.getElementById('order-lines-container');
+    container.innerHTML = `
+        <div class="order-line-item border p-3 mb-2 rounded">
+            <div class="row">
+                <div class="col-md-4">
+                    <label class="form-label">Ürün</label>
+                    <select class="form-select product-select" name="product_id[]" required>
+                        <option value="">Ürün seçin</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Miktar</label>
+                    <input type="number" class="form-control qty-input" name="qty[]" min="1" required>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Birim Fiyat</label>
+                    <input type="number" class="form-control unit-price-input" name="unit_price[]" step="0.01" min="0" required>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <button type="button" class="btn btn-danger btn-sm w-100 remove-line" style="display: none;">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Load products for the first line
+    const firstSelect = container.querySelector('.product-select');
+    if (firstSelect) {
+        loadProductsForSelect(firstSelect);
+    }
+    updateRemoveButtons();
+    
+    // Set today's date
+    document.getElementById('order_date').value = new Date().toISOString().split('T')[0];
+    
+    // Show helpful message
+    setTimeout(() => {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = 'alert alert-info alert-dismissible fade show';
+        alertDiv.innerHTML = `
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Not:</strong> Her satırda ürün seçimi, miktar ve birim fiyat girişi yapmanız gerekmektedir.
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        const modalBody = document.querySelector('#addOrderModal .modal-body');
+        if (modalBody) {
+            modalBody.insertBefore(alertDiv, modalBody.firstChild);
+        }
+    }, 500);
+    
+    const modal = new bootstrap.Modal(document.getElementById('addOrderModal'));
+    modal.show();
+}
+
+document.getElementById('addOrderForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    // Get form data directly from form elements
+    const supplierSelect = document.getElementById('supplier_id');
+    console.log('Supplier select element:', supplierSelect);
+    console.log('Supplier select value:', supplierSelect ? supplierSelect.value : 'ELEMENT NOT FOUND');
+    
+        const data = {
+            supplier_id: supplierSelect ? supplierSelect.value : '',
+            order_no: document.getElementById('order_no').value,
+            order_date: document.getElementById('order_date').value,
+            expected_date: document.getElementById('expected_date').value || null,
+            note: document.getElementById('note').value
+        };
+    
+    console.log('Form data:', data);
+    console.log('Supplier ID:', data.supplier_id, 'Type:', typeof data.supplier_id);
+    
+    // Validate required fields first
+    if (!data.supplier_id || data.supplier_id === '') {
+        console.log('Tedarikçi seçilmedi!');
+        alert('Lütfen geçerli bir tedarikçi seçin!');
+        return;
+    }
+    
+    // Convert string values to proper types
+    data.supplier_id = parseInt(data.supplier_id);
+    
+    // Validate after conversion
+    if (isNaN(data.supplier_id)) {
+        alert('Lütfen geçerli bir tedarikçi seçin!');
+        return;
+    }
+    
+    // Convert date strings to Date objects
+    if (data.order_date) {
+        data.order_date = new Date(data.order_date).toISOString().split('T')[0];
+    }
+    if (data.expected_date) {
+        data.expected_date = new Date(data.expected_date).toISOString().split('T')[0];
+    }
+    
+    // Check if all product selects are loaded
+    const productSelects = document.querySelectorAll('.product-select');
+    const unloadedSelects = Array.from(productSelects).filter(select => !select.getAttribute('data-loaded'));
+    
+    if (unloadedSelects.length > 0) {
+        alert('Ürünler henüz yükleniyor, lütfen bekleyin...');
+        return;
+    }
+    
+    // Check if any product select is invalid (no product selected)
+    const invalidSelects = Array.from(productSelects).filter(select => 
+        select.classList.contains('is-invalid') || 
+        !select.value || 
+        select.value === '' || 
+        select.value === 'undefined'
+    );
+    
+    if (invalidSelects.length > 0) {
+        alert('Lütfen tüm satırlarda geçerli bir ürün seçin!');
+        return;
+    }
+    
+    // Collect order lines
+    const lines = [];
+    const lineItems = document.querySelectorAll('.order-line-item');
+    
+    console.log('Found line items:', lineItems.length);
+    
+    lineItems.forEach((item, index) => {
+        const productSelect = item.querySelector('.product-select');
+        const qtyInput = item.querySelector('.qty-input');
+        const unitPriceInput = item.querySelector('.unit-price-input');
+        
+        console.log(`Line ${index}:`, {
+            productSelect: productSelect,
+            qtyInput: qtyInput,
+            unitPriceInput: unitPriceInput
+        });
+        
+        const productId = productSelect ? productSelect.value : '';
+        const qty = qtyInput ? qtyInput.value : '';
+        const unitPrice = unitPriceInput ? unitPriceInput.value : '';
+        
+        console.log(`Line ${index} values:`, {
+            productId: productId,
+            qty: qty,
+            unitPrice: unitPrice
+        });
+        
+        // Debug the select element more thoroughly
+        if (productSelect) {
+            console.log(`Line ${index} select element:`, productSelect);
+            console.log(`Line ${index} select options:`, Array.from(productSelect.options).map(opt => ({value: opt.value, text: opt.text})));
+            console.log(`Line ${index} selected option:`, productSelect.selectedOptions[0]);
+            console.log(`Line ${index} selectedIndex:`, productSelect.selectedIndex);
+        }
+        
+        // Check if this line has any data filled
+        const hasData = productId || qty || unitPrice;
+        
+        if (hasData) {
+            // If any field is filled, all fields are required
+            if (!productId || !qty || !unitPrice) {
+                alert(`Satır ${index + 1}: Tüm alanlar doldurulmalıdır!`);
+                return;
+            }
+            
+            // Validate product selection - check for empty, undefined, or invalid values
+            if (!productId || productId === '' || productId === 'undefined' || productId === 'null' || isNaN(parseInt(productId))) {
+                alert(`Satır ${index + 1}: Geçerli bir ürün seçin! (Seçilen değer: "${productId}")`);
+                return;
+            }
+            
+            // Validate quantity
+            if (isNaN(parseInt(qty)) || parseInt(qty) <= 0) {
+                alert(`Satır ${index + 1}: Geçerli bir miktar girin!`);
+                return;
+            }
+            
+            // Validate unit price
+            if (isNaN(parseFloat(unitPrice)) || parseFloat(unitPrice) < 0) {
+                alert(`Satır ${index + 1}: Geçerli bir birim fiyat girin!`);
+                return;
+            }
+            
+            lines.push({
+                product_id: parseInt(productId),
+                qty: parseInt(qty),
+                unit_price: parseFloat(unitPrice)
+            });
+            console.log(`Line ${index} added to lines array`);
+        } else {
+            console.log(`Line ${index} skipped - no data`);
+        }
+    });
+    
+    data.lines = lines;
+    
+    if (data.lines.length === 0) {
+        alert('Lütfen en az bir sipariş kalemi ekleyin!\n\nNot: Her satırda ürün, miktar ve birim fiyat alanlarını doldurmanız gerekmektedir.');
+        return;
+    }
+    
+    if (!data.order_no || !data.order_no.trim()) {
+        alert('Lütfen sipariş numarası girin!');
+        return;
+    }
+    
+    if (!data.order_date) {
+        alert('Lütfen sipariş tarihi seçin!');
+        return;
+    }
+    
+    try {
+        const response = await axios.post('/orders/purchase', data);
+        
+        alert('Sipariş başarıyla oluşturuldu!');
+        bootstrap.Modal.getInstance(document.getElementById('addOrderModal')).hide();
+        this.reset();
+        loadOrders();
+    } catch (error) {
+        console.error('Sipariş oluşturma hatası:', error);
+        const errorMessage = error.response?.data?.error || 'Bilinmeyen hata';
+        alert('Hata: ' + (typeof errorMessage === 'object' ? JSON.stringify(errorMessage) : errorMessage));
+    }
+});
+
+function viewOrder(id) {
+    alert('Sipariş detayları yakında eklenecek!');
+}
+
+async function approveOrder(orderId) {
+    if (!orderId || orderId === 'undefined') {
+        alert('Geçersiz sipariş ID!');
+        return;
+    }
+    
+    if (!confirm('Bu siparişi onaylamak istediğinizden emin misiniz?')) {
+        return;
+    }
+    
+    try {
+        const response = await axios.post(`/orders/purchase/${orderId}/approve`);
+        
+        alert('Sipariş başarıyla onaylandı!');
+        // Force reload the page to show updated status
+        setTimeout(() => {
+            loadOrders();
+        }, 500);
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+}
+
+async function receiveOrder(orderId) {
+    if (!orderId || orderId === 'undefined') {
+        alert('Geçersiz sipariş ID!');
+        return;
+    }
+    
+    console.log('Starting receive order process for ID:', orderId);
+    
+    // Store order ID for later use
+    window.currentReceiveOrderId = orderId;
+    
+    try {
+        // Load order lines and warehouses
+        console.log('Loading order lines...');
+        await loadOrderLinesForReceive(orderId);
+        
+        console.log('Loading warehouses...');
+        await loadWarehousesForReceive();
+        
+        console.log('Both order lines and warehouses loaded, showing modal...');
+        
+        // Show modal
+        const modal = new bootstrap.Modal(document.getElementById('receiveOrderModal'));
+        modal.show();
+    } catch (error) {
+        console.error('Error loading data for receive order:', error);
+        alert('Veri yüklenirken hata oluştu: ' + error.message);
+    }
+}
+
+async function loadOrderLinesForReceive(orderId) {
+    try {
+        console.log('Loading order lines for order ID:', orderId);
+        const response = await axios.get(`/orders/purchase/${orderId}`);
+        
+        console.log('API response:', response.data);
+        const order = response.data.order;
+        console.log('Order data:', order);
+        console.log('Order lines:', order.lines);
+        
+        const lineSelect = document.getElementById('receive_line_id');
+        lineSelect.innerHTML = '<option value="">Sipariş kalemi seçin</option>';
+        
+        // Miktar alanını gizle
+        const qtySection = document.getElementById('qty-section');
+        qtySection.style.display = 'none';
+        
+        if (order.lines && order.lines.length > 0) {
+            console.log('Found', order.lines.length, 'order lines');
+            order.lines.forEach((line, index) => {
+                console.log(`Line ${index}:`, line);
+                const option = document.createElement('option');
+                option.value = line.id;
+                option.textContent = `${line.product?.name || 'Ürün'} - Miktar: ${line.qty} - Birim Fiyat: ${line.unit_price}`;
+                lineSelect.appendChild(option);
+            });
+        } else {
+            console.log('No order lines found or lines array is empty');
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'Sipariş kalemi bulunamadı';
+            option.disabled = true;
+            lineSelect.appendChild(option);
+        }
+    } catch (error) {
+        console.error('Sipariş kalemleri yüklenemedi:', error);
+        console.error('Error details:', error.response);
+        
+        const lineSelect = document.getElementById('receive_line_id');
+        lineSelect.innerHTML = '<option value="">Hata: Sipariş kalemleri yüklenemedi</option>';
+        
+        // Miktar alanını gizle
+        const qtySection = document.getElementById('qty-section');
+        qtySection.style.display = 'none';
+    }
+}
+
+async function loadWarehousesForReceive() {
+    try {
+        console.log('Loading warehouses...');
+        const response = await axios.get('/warehouses');
+        
+        console.log('Warehouses response:', response.data);
+        const warehouses = response.data.warehouses;
+        const warehouseSelect = document.getElementById('receive_warehouse_id');
+        
+        if (!warehouseSelect) {
+            console.error('Warehouse select element not found!');
+            return;
+        }
+        
+        warehouseSelect.innerHTML = '<option value="">Depo seçin</option>';
+        
+        console.log('Found warehouses:', warehouses);
+        
+        warehouses.forEach(warehouse => {
+            console.log('Adding warehouse:', warehouse);
+            const option = document.createElement('option');
+            option.value = warehouse.id;
+            option.textContent = warehouse.name;
+            warehouseSelect.appendChild(option);
+        });
+        
+        console.log('Warehouses loaded successfully');
+    } catch (error) {
+        console.error('Depolar yüklenemedi:', error);
+        console.error('Error details:', error.response);
+    }
+}
+
+function viewOrder(orderId) {
+    // View order details - can be implemented later
+    alert('Sipariş detayları görüntüleniyor...');
+}
+</script>
+{% endblock %}

@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{% block title %}Raporlar - Mini ERP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-chart-bar me-2"></i>Raporlar</h2>
+        <p class="text-muted">Sistem raporları ve analizler</p>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-danger text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="low-stock-count">-</h4>
+                        <p class="mb-0">Kritik Stok</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="total-products">-</h4>
+                        <p class="mb-0">Toplam Ürün</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-boxes fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="total-warehouses">-</h4>
+                        <p class="mb-0">Toplam Depo</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-warehouse fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="recent-movements">-</h4>
+                        <p class="mb-0">Son Hareketler</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-exchange-alt fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 id="purchase-value">-</h4>
+                        <p class="mb-0">Satın Alma (30 Gün)</p>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-shopping-cart fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Kritik Stok Raporu</h5>
+            </div>
+            <div class="card-body">
+                <div id="low-stock-report">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-warehouse me-2"></i>Envanter Özeti</h5>
+            </div>
+            <div class="card-body">
+                <div id="inventory-summary">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Hareket Özeti (Son 30 Gün)</h5>
+            </div>
+            <div class="card-body">
+                <div id="movement-summary">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-shopping-cart me-2"></i>Satın Alma Özeti (Son 30 Gün)</h5>
+            </div>
+            <div class="card-body">
+                <div id="purchase-summary">
+                    <div class="text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// Configure axios for this page
+axios.defaults.baseURL = '/api';
+axios.defaults.withCredentials = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) {
+        alert('Lütfen önce giriş yapın!');
+        window.location.href = '/';
+        return;
+    }
+    
+    loadDashboardData();
+    loadLowStockReport();
+    loadInventorySummary();
+    loadMovementSummary();
+    loadPurchaseSummary();
+});
+
+async function loadDashboardData() {
+    try {
+        const response = await axios.get('/reports/dashboard');
+        
+        const data = response.data;
+        document.getElementById('low-stock-count').textContent = data.low_stock_count;
+        document.getElementById('total-products').textContent = data.total_products;
+        document.getElementById('total-warehouses').textContent = data.total_warehouses;
+        document.getElementById('recent-movements').textContent = data.recent_movements;
+        
+        // Show purchase value if available
+        if (data.total_purchase_value !== undefined) {
+            const purchaseValueElement = document.getElementById('purchase-value');
+            if (purchaseValueElement) {
+                purchaseValueElement.textContent = data.total_purchase_value.toFixed(2) + ' ₺';
+            }
+        }
+    } catch (error) {
+        console.error('Dashboard data yüklenemedi:', error);
+    }
+}
+
+async function loadLowStockReport() {
+    try {
+        const response = await axios.get('/reports/low-stock');
+        
+        const lowStockItems = response.data.low_stock_items;
+        const container = document.getElementById('low-stock-report');
+        
+        if (lowStockItems.length === 0) {
+            container.innerHTML = '<p class="text-muted">Kritik stok uyarısı yok</p>';
+            return;
+        }
+        
+        let html = '<div class="list-group list-group-flush">';
+        lowStockItems.slice(0, 5).forEach(item => {
+            html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${item.sku}</strong> - ${item.name}
+                        <br>
+                        <small class="text-muted">${item.warehouse_name}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-danger">${item.available_qty} ${item.unit}</span>
+                        <br>
+                        <small class="text-muted">Min: ${item.reorder_point}</small>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        if (lowStockItems.length > 5) {
+            html += `<div class="text-center mt-2">
+                <small class="text-muted">+${lowStockItems.length - 5} daha fazla...</small>
+            </div>`;
+        }
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Kritik stok raporu yüklenemedi:', error);
+        document.getElementById('low-stock-report').innerHTML = '<p class="text-danger">Veri yüklenemedi</p>';
+    }
+}
+
+async function loadInventorySummary() {
+    try {
+        const response = await axios.get('/reports/inventory-summary');
+        
+        const summary = response.data.inventory_summary;
+        const container = document.getElementById('inventory-summary');
+        
+        if (summary.length === 0) {
+            container.innerHTML = '<p class="text-muted">Envanter verisi bulunamadı</p>';
+            return;
+        }
+        
+        let html = '<div class="list-group list-group-flush">';
+        summary.forEach(item => {
+            html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${item.warehouse_name}</strong>
+                        <br>
+                        <small class="text-muted">${item.product_count} ürün</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary">${item.total_available} adet</span>
+                        <br>
+                        <small class="text-muted">Eldeki: ${item.total_on_hand}</small>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Envanter özeti yüklenemedi:', error);
+        document.getElementById('inventory-summary').innerHTML = '<p class="text-danger">Veri yüklenemedi</p>';
+    }
+}
+
+async function loadMovementSummary() {
+    try {
+        const response = await axios.get('/reports/movement-summary?days=30');
+        
+        const movements = response.data.movement_summary;
+        const container = document.getElementById('movement-summary');
+        
+        if (movements.length === 0) {
+            container.innerHTML = '<p class="text-muted">Hareket verisi bulunamadı</p>';
+            return;
+        }
+        
+        let html = '<div class="list-group list-group-flush">';
+        movements.slice(0, 5).forEach(item => {
+            html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${item.sku}</strong> - ${item.name}
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-success">+${item.total_in}</span>
+                        <span class="badge bg-danger">-${item.total_out}</span>
+                        <br>
+                        <small class="text-muted">Net: ${item.net_movement}</small>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Hareket özeti yüklenemedi:', error);
+        document.getElementById('movement-summary').innerHTML = '<p class="text-danger">Veri yüklenemedi</p>';
+    }
+}
+
+async function loadPurchaseSummary() {
+    try {
+        const response = await axios.get('/reports/purchase-summary?days=30');
+        
+        const purchases = response.data.purchase_summary;
+        const container = document.getElementById('purchase-summary');
+        
+        if (purchases.length === 0) {
+            container.innerHTML = '<p class="text-muted">Satın alma verisi bulunamadı</p>';
+            return;
+        }
+        
+        let html = '<div class="list-group list-group-flush">';
+        purchases.slice(0, 5).forEach(item => {
+            html += `
+                <div class="list-group-item d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${item.supplier_name}</strong>
+                        <br>
+                        <small class="text-muted">${item.order_count} sipariş</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary">${item.total_value.toLocaleString('tr-TR')} ₺</span>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Satın alma özeti yüklenemedi:', error);
+        document.getElementById('purchase-summary').innerHTML = '<p class="text-danger">Veri yüklenemedi</p>';
+    }
+}
+</script>
+{% endblock %}
+

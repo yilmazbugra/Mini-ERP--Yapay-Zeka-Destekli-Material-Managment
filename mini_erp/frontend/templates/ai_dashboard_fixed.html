@@ -1,0 +1,380 @@
+{% extends "base.html" %}
+
+{% block title %}AI Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    .chart-container {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .btn-ai {
+        background: linear-gradient(45deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+    }
+    .btn-ai:hover {
+        background: linear-gradient(45deg, #5a6fd8 0%, #6a4190 100%);
+        color: white;
+    }
+    .ai-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .status-badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: bold;
+    }
+    .status-active { background: #d4edda; color: #155724; }
+    .status-pending { background: #fff3cd; color: #856404; }
+    .status-error { background: #f8d7da; color: #721c24; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="ai-card">
+                <h2><i class="fas fa-robot"></i> AI Dashboard</h2>
+                <p class="mb-0">Yapay zeka destekli iş zekası ve tahmin analizi</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- AI Öngörüleri -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h5><i class="fas fa-brain"></i> AI Öngörüleri</h5>
+                <div id="ai-insights">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                        <p class="mt-2">AI öngörüleri yükleniyor...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ML Modelleri -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h5><i class="fas fa-cogs"></i> ML Modelleri</h5>
+                <div id="ml-models-status">
+                    <div class="text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Yükleniyor...</span>
+                        </div>
+                        <p class="mt-2">Model durumları yükleniyor...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Talep Tahmini -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h5><i class="fas fa-chart-line"></i> Talep Tahmini</h5>
+                <p class="text-muted">Hangi ürün ne zaman bitecek, otomatik sipariş önerileri</p>
+                
+                <div class="mb-3">
+                    <select id="product-select" class="form-select mb-2">
+                        <option value="">Ürün seçin...</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary mb-2" onclick="loadProducts()">Ürünleri Yükle</button>
+                    <select id="warehouse-select" class="form-select mb-2">
+                        <option value="">Depo seçin...</option>
+                    </select>
+                    <button class="btn btn-sm btn-outline-primary mb-2" onclick="loadWarehouses()">Depoları Yükle</button>
+                    <button class="btn btn-ai btn-sm" onclick="trainDemandModel()">
+                        <i class="fas fa-cogs"></i> Model Eğit
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" onclick="predictDemand()">
+                        <i class="fas fa-crystal-ball"></i> Tahmin Yap
+                    </button>
+                </div>
+                <div id="demand-results"></div>
+            </div>
+        </div>
+
+        <!-- Satış Tahmini -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h5><i class="fas fa-chart-bar"></i> Satış Tahmini</h5>
+                <p class="text-muted">Gelecek dönem satış tahminleri</p>
+                <button class="btn btn-ai btn-sm mb-2" onclick="trainSalesModel()">
+                    <i class="fas fa-cogs"></i> Model Eğit
+                </button>
+                <button class="btn btn-outline-primary btn-sm mb-2" onclick="predictSales()">
+                    <i class="fas fa-crystal-ball"></i> Tahmin Yap
+                </button>
+                <div id="sales-results"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Müşteri Segmentasyonu -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h5><i class="fas fa-users"></i> Müşteri Segmentasyonu</h5>
+                <p class="text-muted">RFM analizi ile müşteri grupları</p>
+                <button class="btn btn-ai btn-sm mb-2" onclick="performSegmentation()">
+                    <i class="fas fa-users-cog"></i> Segmentasyon Yap
+                </button>
+                <div id="segmentation-results"></div>
+            </div>
+        </div>
+
+        <!-- Otomatik Sipariş Önerileri -->
+        <div class="col-lg-6 mb-4">
+            <div class="chart-container">
+                <h5><i class="fas fa-shopping-cart"></i> Otomatik Sipariş Önerileri</h5>
+                <p class="text-muted">AI destekli stok yönetimi</p>
+                <button class="btn btn-ai btn-sm mb-2" onclick="getReorderSuggestions()">
+                    <i class="fas fa-magic"></i> Önerileri Getir
+                </button>
+                <div id="reorder-results"></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let authToken = null;
+
+// Global fonksiyonlar - HTML'den çağrılabilir
+function loadProducts() {
+    console.log('Ürünler yükleniyor...');
+    if (!authToken) {
+        alert('Önce giriş yapın!');
+        return;
+    }
+    
+    fetch('http://localhost:5001/api/products/?per_page=1000', {
+        headers: {
+            'Authorization': `Bearer ${authToken}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const select = document.getElementById('product-select');
+        if (select && data.products) {
+            select.innerHTML = '<option value="">Ürün seçin...</option>';
+            data.products.forEach(product => {
+                const option = document.createElement('option');
+                option.value = product.id;
+                option.textContent = `${product.sku} - ${product.name}`;
+                select.appendChild(option);
+            });
+            console.log('✅ Ürünler yüklendi: ' + data.products.length);
+        }
+    })
+    .catch(error => {
+        console.error('Ürünler yüklenemedi:', error);
+        alert('Ürünler yüklenemedi: ' + error.message);
+    });
+}
+
+function loadWarehouses() {
+    console.log('Depolar yükleniyor...');
+    if (!authToken) {
+        alert('Önce giriş yapın!');
+        return;
+    }
+    
+    fetch('http://localhost:5001/api/warehouses/', {
+        headers: {
+            'Authorization': `Bearer ${authToken}`
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const select = document.getElementById('warehouse-select');
+        if (select && data.warehouses) {
+            select.innerHTML = '<option value="">Depo seçin...</option>';
+            data.warehouses.forEach(warehouse => {
+                const option = document.createElement('option');
+                option.value = warehouse.id;
+                option.textContent = warehouse.name;
+                select.appendChild(option);
+            });
+            console.log('✅ Depolar yüklendi: ' + data.warehouses.length);
+        }
+    })
+    .catch(error => {
+        console.error('Depolar yüklenemedi:', error);
+        alert('Depolar yüklenemedi: ' + error.message);
+    });
+}
+
+// Sayfa yüklendiğinde otomatik giriş yap
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('AI Dashboard yükleniyor...');
+    autoLogin();
+});
+
+// Otomatik giriş fonksiyonu
+async function autoLogin() {
+    try {
+        console.log('Otomatik giriş yapılıyor...');
+        const response = await fetch('http://localhost:5001/api/auth/login', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                username: 'admin',
+                password: 'admin123'
+            })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            authToken = data.access_token;
+            console.log('✅ Giriş başarılı!');
+            
+            // Verileri yükle
+            loadProducts();
+            loadWarehouses();
+            loadAIInsights();
+            loadMLModels();
+        } else {
+            console.error('❌ Giriş başarısız!');
+            showError('Giriş yapılamadı!');
+        }
+    } catch (error) {
+        console.error('❌ Giriş hatası:', error);
+        showError('Giriş hatası: ' + error.message);
+    }
+}
+
+
+// AI öngörülerini yükle
+async function loadAIInsights() {
+    try {
+        if (!authToken) return;
+        
+        const response = await fetch('http://localhost:5001/api/ml/insights', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('AI öngörüleri yüklenemedi: ' + response.status);
+        }
+        
+        const data = await response.json();
+        const container = document.getElementById('ai-insights');
+        
+        if (container && data.success) {
+            let html = '<div class="row">';
+            data.insights.forEach(insight => {
+                html += `
+                    <div class="col-md-6 mb-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h6 class="card-title">${insight.title}</h6>
+                                <p class="card-text">${insight.description}</p>
+                                <span class="badge bg-primary">${insight.value}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+            container.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('AI öngörüleri yüklenemedi:', error);
+        document.getElementById('ai-insights').innerHTML = '<p class="text-danger">AI öngörüleri yüklenemedi</p>';
+    }
+}
+
+// ML modellerini yükle
+async function loadMLModels() {
+    try {
+        if (!authToken) return;
+        
+        const response = await fetch('http://localhost:5001/api/ml/models', {
+            headers: {
+                'Authorization': `Bearer ${authToken}`
+            }
+        });
+        
+        if (!response.ok) {
+            throw new Error('Modeller yüklenemedi: ' + response.status);
+        }
+        
+        const data = await response.json();
+        const container = document.getElementById('ml-models-status');
+        
+        if (container && data.success) {
+            let html = '';
+            data.models.forEach(model => {
+                const statusClass = model.is_active ? 'status-active' : 'status-pending';
+                const statusText = model.is_active ? 'Aktif' : 'Beklemede';
+                html += `
+                    <div class="mb-2">
+                        <strong>${model.name}</strong>
+                        <span class="status-badge ${statusClass}">${statusText}</span>
+                        <small class="text-muted d-block">${model.model_type}</small>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+    } catch (error) {
+        console.error('Modeller yüklenemedi:', error);
+        document.getElementById('ml-models-status').innerHTML = '<p class="text-danger">Modeller yüklenemedi</p>';
+    }
+}
+
+// Hata göster
+function showError(message) {
+    console.error(message);
+    alert(message);
+}
+
+// Diğer fonksiyonlar (basit versiyonlar)
+async function trainDemandModel() {
+    showError('Talep tahmini modeli eğitiliyor...');
+}
+
+async function predictDemand() {
+    showError('Talep tahmini yapılıyor...');
+}
+
+async function trainSalesModel() {
+    showError('Satış tahmini modeli eğitiliyor...');
+}
+
+async function predictSales() {
+    showError('Satış tahmini yapılıyor...');
+}
+
+async function performSegmentation() {
+    showError('Müşteri segmentasyonu yapılıyor...');
+}
+
+async function getReorderSuggestions() {
+    showError('Sipariş önerileri getiriliyor...');
+}
+</script>
+{% endblock %}

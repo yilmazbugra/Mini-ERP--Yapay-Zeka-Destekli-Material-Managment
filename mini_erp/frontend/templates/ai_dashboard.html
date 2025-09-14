@@ -1,0 +1,453 @@
+{% extends "base.html" %}
+
+{% block title %}AI Dashboard - Mini ERP{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1 class="h3 mb-0 text-gray-800">
+                    <i class="fas fa-robot text-primary"></i> AI Dashboard
+                </h1>
+                <div class="text-muted">
+                    <small>Son güncelleme: <span id="last-updated">-</span></small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4" id="summary-cards">
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-primary shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                                Toplam Müşteri</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-customers">-</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-users fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-success shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                                Toplam Ürün</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-products">-</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-box fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-info shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                                Toplam Sipariş</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-orders">-</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-shopping-cart fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6 mb-4">
+            <div class="card border-left-warning shadow h-100 py-2">
+                <div class="card-body">
+                    <div class="row no-gutters align-items-center">
+                        <div class="col mr-2">
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                                Son 7 Gün</div>
+                            <div class="h5 mb-0 font-weight-bold text-gray-800" id="recent-orders">-</div>
+                        </div>
+                        <div class="col-auto">
+                            <i class="fas fa-calendar-week fa-2x text-gray-300"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Features -->
+    <div class="row">
+        <!-- Order Prediction -->
+        <div class="col-xl-6 col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-chart-line"></i> Haftalık Sipariş Tahmini
+                    </h6>
+                    <button class="btn btn-primary btn-sm" onclick="predictOrders()">
+                        <i class="fas fa-magic"></i> Tahmin Et
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="prediction-placeholder" class="text-center text-muted py-5">
+                        <i class="fas fa-chart-line fa-3x mb-3"></i>
+                        <h5>Haftalık Sipariş Tahmini</h5>
+                        <p>Yapay zeka ile gelecek haftanın siparişlerini tahmin edin</p>
+                        <p class="small">Tahmin etmek için yukarıdaki butona tıklayın</p>
+                    </div>
+                    <div id="prediction-results" style="display: none;">
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h4 class="text-primary" id="total-predicted-orders">-</h4>
+                                    <small class="text-muted">Tahmini Sipariş</small>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="text-center">
+                                    <h4 class="text-success" id="total-predicted-value">-</h4>
+                                    <small class="text-muted">Tahmini Değer (₺)</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Tarih</th>
+                                        <th>Gün</th>
+                                        <th>Sipariş</th>
+                                        <th>Değer (₺)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="prediction-table">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="text-center">
+                            <small class="text-muted">
+                                Model Doğruluğu: <span id="prediction-accuracy">-</span>%
+                            </small>
+                        </div>
+                    </div>
+                    <div id="prediction-loading" class="text-center py-3" style="display: none;">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="sr-only">Yükleniyor...</span>
+                        </div>
+                        <p class="mt-2">Tahmin yapılıyor...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Customer Segmentation -->
+        <div class="col-xl-6 col-lg-12 mb-4">
+            <div class="card shadow">
+                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-success">
+                        <i class="fas fa-users-cog"></i> Müşteri Segmentasyonu
+                    </h6>
+                    <button class="btn btn-success btn-sm" onclick="segmentCustomers()">
+                        <i class="fas fa-chart-pie"></i> Segment Et
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="segmentation-placeholder" class="text-center text-muted py-5">
+                        <i class="fas fa-chart-pie fa-3x mb-3"></i>
+                        <h5>Müşteri Segmentasyonu</h5>
+                        <p>Müşterilerinizi davranışlarına göre gruplandırın</p>
+                        <p class="small">Segmentasyon yapmak için yukarıdaki butona tıklayın</p>
+                    </div>
+                    <div id="segmentation-results" style="display: none;">
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="text-center">
+                                    <h4 class="text-success" id="total-segmented-customers">-</h4>
+                                    <small class="text-muted">Toplam Segmentlenen Müşteri</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="segmentation-chart" class="mb-3">
+                            <!-- Chart will be rendered here -->
+                        </div>
+                        <div id="segments-container">
+                            <div id="segments-list">
+                                <!-- Segments will be listed here -->
+                            </div>
+                        </div>
+                    </div>
+                    <div id="segmentation-loading" class="text-center py-3" style="display: none;">
+                        <div class="spinner-border text-success" role="status">
+                            <span class="sr-only">Yükleniyor...</span>
+                        </div>
+                        <p class="mt-2">Segmentasyon yapılıyor...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Additional Info -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card shadow">
+                <div class="card-header py-3">
+                    <h6 class="m-0 font-weight-bold text-info">
+                        <i class="fas fa-info-circle"></i> AI Dashboard Hakkında
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6 class="text-primary">Haftalık Sipariş Tahmini</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> Geçmiş verileri analiz eder</li>
+                                <li><i class="fas fa-check text-success"></i> Makine öğrenmesi algoritmaları kullanır</li>
+                                <li><i class="fas fa-check text-success"></i> Günlük sipariş ve değer tahmini</li>
+                                <li><i class="fas fa-check text-success"></i> Model doğruluk oranı gösterir</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-success">Müşteri Segmentasyonu</h6>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-check text-success"></i> K-means clustering algoritması</li>
+                                <li><i class="fas fa-check text-success"></i> Müşteri davranış analizi</li>
+                                <li><i class="fas fa-check text-success"></i> Görsel segmentasyon haritası</li>
+                                <li><i class="fas fa-check text-success"></i> Detaylı segment raporları</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<script>
+// Load summary data on page load
+document.addEventListener('DOMContentLoaded', function() {
+    loadSummaryData();
+});
+
+function loadSummaryData() {
+    fetch('/api/ai/summary', {
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('total-customers').textContent = data.data.total_customers;
+            document.getElementById('total-products').textContent = data.data.total_products;
+            document.getElementById('total-orders').textContent = data.data.total_orders;
+            document.getElementById('recent-orders').textContent = data.data.recent_orders;
+            document.getElementById('last-updated').textContent = data.data.last_updated;
+        }
+    })
+    .catch(error => {
+        console.error('Error loading summary data:', error);
+    });
+}
+
+function predictOrders() {
+    const placeholder = document.getElementById('prediction-placeholder');
+    const results = document.getElementById('prediction-results');
+    const loading = document.getElementById('prediction-loading');
+    
+    placeholder.style.display = 'none';
+    results.style.display = 'none';
+    loading.style.display = 'block';
+    
+    fetch('/api/ai/predict-orders', {
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        loading.style.display = 'none';
+        
+        if (data.success) {
+            results.style.display = 'block';
+            
+            document.getElementById('total-predicted-orders').textContent = data.total_predicted_orders;
+            document.getElementById('total-predicted-value').textContent = data.total_predicted_value;
+            document.getElementById('prediction-accuracy').textContent = data.accuracy;
+            
+            const tableBody = document.getElementById('prediction-table');
+            tableBody.innerHTML = '';
+            
+            data.predictions.forEach(day => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${day.date}</td>
+                    <td>${day.day_name}</td>
+                    <td>${day.predicted_orders}</td>
+                    <td>₺${day.predicted_value}</td>
+                `;
+                tableBody.appendChild(row);
+            });
+        } else {
+            placeholder.style.display = 'block';
+            alert('Hata: ' + data.message);
+        }
+    })
+    .catch(error => {
+        loading.style.display = 'none';
+        placeholder.style.display = 'block';
+        console.error('Error predicting orders:', error);
+        alert('Tahmin yapılırken hata oluştu');
+    });
+}
+
+function segmentCustomers() {
+    const placeholder = document.getElementById('segmentation-placeholder');
+    const results = document.getElementById('segmentation-results');
+    const loading = document.getElementById('segmentation-loading');
+    
+    placeholder.style.display = 'none';
+    results.style.display = 'none';
+    loading.style.display = 'block';
+    
+    fetch('/api/ai/customer-segmentation', {
+        credentials: 'include'
+    })
+    .then(response => response.json())
+    .then(data => {
+        loading.style.display = 'none';
+        
+        if (data.success) {
+            results.style.display = 'block';
+            
+            document.getElementById('total-segmented-customers').textContent = data.total_customers;
+            
+            // Render chart
+            if (data.chart_data) {
+                const chartData = JSON.parse(data.chart_data);
+                Plotly.newPlot('segmentation-chart', chartData.data, chartData.layout, {responsive: true});
+            }
+            
+            // Show quality metrics
+            if (data.quality_metrics) {
+                const qualityDiv = document.createElement('div');
+                qualityDiv.className = 'alert alert-info mb-3';
+                qualityDiv.innerHTML = `
+                    <h6><i class="fas fa-chart-line me-2"></i>Segmentasyon Kalitesi</h6>
+                    <div class="row text-center">
+                        <div class="col-3">
+                            <strong>${data.quality_metrics.quality_percentage}%</strong>
+                            <br><small class="text-muted">Genel Kalite</small>
+                        </div>
+                        <div class="col-3">
+                            <strong>${data.quality_metrics.silhouette_score}</strong>
+                            <br><small class="text-muted">Silhouette Skoru</small>
+                        </div>
+                        <div class="col-3">
+                            <strong>${data.quality_metrics.calinski_harabasz_score}</strong>
+                            <br><small class="text-muted">Calinski-Harabasz</small>
+                        </div>
+                        <div class="col-3">
+                            <strong>${data.quality_metrics.inertia}</strong>
+                            <br><small class="text-muted">Inertia</small>
+                        </div>
+                    </div>
+                `;
+                document.getElementById('segments-container').insertBefore(qualityDiv, document.getElementById('segments-list'));
+            }
+            
+            // Render segments list
+            const segmentsList = document.getElementById('segments-list');
+            segmentsList.innerHTML = '';
+            
+            data.segments.forEach(segment => {
+                const segmentCard = document.createElement('div');
+                segmentCard.className = 'card mb-3';
+                segmentCard.innerHTML = `
+                    <div class="card-header py-2" style="cursor: pointer;" onclick="toggleSegmentDetails(${segment.segment_id})">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="card-title mb-0">${segment.segment_name}</h6>
+                            <i class="fas fa-chevron-down" id="chevron-${segment.segment_id}"></i>
+                        </div>
+                        <div class="row text-center mt-2">
+                            <div class="col-3">
+                                <small class="text-muted">Müşteri</small>
+                                <div class="font-weight-bold">${segment.customer_count}</div>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted">Ort. Sipariş</small>
+                                <div class="font-weight-bold">${segment.avg_orders}</div>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted">Ort. Değer</small>
+                                <div class="font-weight-bold">₺${segment.avg_value}</div>
+                            </div>
+                            <div class="col-3">
+                                <small class="text-muted">Son Sipariş</small>
+                                <div class="font-weight-bold">${segment.avg_days_since_order}g</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body py-2" id="details-${segment.segment_id}" style="display: none;">
+                        <h6 class="text-muted mb-2">Müşteri Detayları:</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Müşteri Adı</th>
+                                        <th>Toplam Sipariş</th>
+                                        <th>Toplam Değer (₺)</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${segment.customers.map(customer => `
+                                        <tr>
+                                            <td>${customer.customer_name}</td>
+                                            <td>${customer.total_orders}</td>
+                                            <td>₺${customer.total_value.toFixed(2)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                segmentsList.appendChild(segmentCard);
+            });
+        } else {
+            placeholder.style.display = 'block';
+            alert('Hata: ' + data.message);
+        }
+    })
+    .catch(error => {
+        loading.style.display = 'none';
+        placeholder.style.display = 'block';
+        console.error('Error segmenting customers:', error);
+        alert('Segmentasyon yapılırken hata oluştu');
+    });
+}
+
+function toggleSegmentDetails(segmentId) {
+    const detailsDiv = document.getElementById(`details-${segmentId}`);
+    const chevron = document.getElementById(`chevron-${segmentId}`);
+    
+    if (detailsDiv.style.display === 'none') {
+        detailsDiv.style.display = 'block';
+        chevron.className = 'fas fa-chevron-up';
+    } else {
+        detailsDiv.style.display = 'none';
+        chevron.className = 'fas fa-chevron-down';
+    }
+}
+</script>
+{% endblock %}

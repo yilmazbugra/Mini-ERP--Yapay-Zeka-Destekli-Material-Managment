@@ -1,0 +1,31 @@
+version: '3.8'
+
+services:
+  mini-erp:
+    build: .
+    ports:
+      - "5001:5001"
+    environment:
+      - FLASK_ENV=production
+      - DATABASE_URL=sqlite:///mini_erp.db
+      - SECRET_KEY=your-secret-key-here
+      - JWT_SECRET_KEY=your-jwt-secret-key-here
+    volumes:
+      - ./data:/app/data
+    restart: unless-stopped
+
+  # Optional: PostgreSQL for production
+  # postgres:
+  #   image: postgres:15
+  #   environment:
+  #     POSTGRES_DB: mini_erp
+  #     POSTGRES_USER: mini_erp
+  #     POSTGRES_PASSWORD: mini_erp_password
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   ports:
+  #     - "5432:5432"
+
+# volumes:
+#   postgres_data:
+

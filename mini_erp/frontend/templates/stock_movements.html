@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Stok Hareketleri - Mini ERP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-exchange-alt me-2"></i>Stok Hareketleri</h2>
+            <button class="btn btn-primary" onclick="showAddMovementModal()">
+                <i class="fas fa-plus me-1"></i>Yeni Hareket
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-3">
+        <select class="form-select" id="productFilter">
+            <option value="">Tüm Ürünler</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="warehouseFilter">
+            <option value="">Tüm Depolar</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="typeFilter">
+            <option value="">Tüm Türler</option>
+            <option value="Purchase">Satın Alma</option>
+            <option value="Sales">Satış</option>
+            <option value="Transfer">Transfer</option>
+            <option value="Adjustment">Düzeltme</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <button class="btn btn-outline-secondary w-100" onclick="filterMovements()">
+            <i class="fas fa-filter me-1"></i>Filtrele
+        </button>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tarih</th>
+                                <th>Ürün</th>
+                                <th>Depo</th>
+                                <th>Yön</th>
+                                <th>Miktar</th>
+                                <th>Tür</th>
+                                <th>Belge No</th>
+                                <th>Not</th>
+                                <th>Kullanıcı</th>
+                            </tr>
+                        </thead>
+                        <tbody id="movements-table">
+                            <tr>
+                                <td colspan="9" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Yükleniyor...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Movement Modal -->
+<div class="modal fade" id="addMovementModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Stok Hareketi</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addMovementForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="product_id" class="form-label">Ürün *</label>
+                                <select class="form-select" id="product_id" name="product_id" required>
+                                    <option value="">Seçiniz</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="warehouse_id" class="form-label">Depo *</label>
+                                <select class="form-select" id="warehouse_id" name="warehouse_id" required>
+                                    <option value="">Seçiniz</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="direction" class="form-label">Yön *</label>
+                                <select class="form-select" id="direction" name="direction" required>
+                                    <option value="">Seçiniz</option>
+                                    <option value="IN">Giriş</option>
+                                    <option value="OUT">Çıkış</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="quantity" class="form-label">Miktar *</label>
+                                <input type="number" class="form-control" id="quantity" name="quantity" required min="1">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="movement_type" class="form-label">Hareket Türü *</label>
+                                <select class="form-select" id="movement_type" name="movement_type" required>
+                                    <option value="">Seçiniz</option>
+                                    <option value="Purchase">Satın Alma</option>
+                                    <option value="Sales">Satış</option>
+                                    <option value="Transfer">Transfer</option>
+                                    <option value="Adjustment">Düzeltme</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="ref_document_no" class="form-label">Belge No</label>
+                                <input type="text" class="form-control" id="ref_document_no" name="ref_document_no">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="note" class="form-label">Not</label>
+                        <textarea class="form-control" id="note" name="note" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// Configure axios for this page
+axios.defaults.baseURL = '/api';
+axios.defaults.withCredentials = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) {
+        alert('Lütfen önce giriş yapın!');
+        window.location.href = '/';
+        return;
+    }
+    
+    loadMovements();
+    loadProducts();
+    loadWarehouses();
+});
+
+async function loadMovements() {
+    try {
+        const response = await axios.get('/stock/movements');
+        
+        const movements = response.data.movements;
+        const tbody = document.getElementById('movements-table');
+        
+        if (movements.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Hareket bulunamadı</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        movements.forEach(movement => {
+            const directionClass = movement.direction === 'IN' ? 'text-success' : 'text-danger';
+            const directionIcon = movement.direction === 'IN' ? 'fa-arrow-down' : 'fa-arrow-up';
+            
+            html += `
+                <tr>
+                    <td>${new Date(movement.created_at).toLocaleString('tr-TR')}</td>
+                    <td>${movement.product?.sku || 'Bilinmiyor'}</td>
+                    <td>${movement.warehouse?.name || 'Bilinmiyor'}</td>
+                    <td>
+                        <i class="fas ${directionIcon} ${directionClass}"></i>
+                        ${movement.direction}
+                    </td>
+                    <td><strong>${movement.quantity}</strong></td>
+                    <td>
+                        <span class="badge bg-info">${movement.movement_type}</span>
+                    </td>
+                    <td>${movement.ref_document_no || '-'}</td>
+                    <td>${movement.note || '-'}</td>
+                    <td>${movement.user?.username || 'Sistem'}</td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    } catch (error) {
+        console.error('Hareketler yüklenemedi:', error);
+        document.getElementById('movements-table').innerHTML = '<tr><td colspan="9" class="text-center text-danger">Veri yüklenemedi</td></tr>';
+    }
+}
+
+async function loadProducts() {
+    try {
+        const response = await axios.get('/products');
+        
+        const products = response.data.products;
+        const select = document.getElementById('product_id');
+        const filterSelect = document.getElementById('productFilter');
+        
+        products.forEach(product => {
+            const option1 = document.createElement('option');
+            option1.value = product.id;
+            option1.textContent = `${product.sku} - ${product.name}`;
+            select.appendChild(option1);
+            
+            const option2 = document.createElement('option');
+            option2.value = product.id;
+            option2.textContent = `${product.sku} - ${product.name}`;
+            filterSelect.appendChild(option2);
+        });
+    } catch (error) {
+        console.error('Ürünler yüklenemedi:', error);
+    }
+}
+
+async function loadWarehouses() {
+    try {
+        const response = await axios.get('/warehouses');
+        
+        const warehouses = response.data.warehouses;
+        const select = document.getElementById('warehouse_id');
+        const filterSelect = document.getElementById('warehouseFilter');
+        
+        warehouses.forEach(warehouse => {
+            const option1 = document.createElement('option');
+            option1.value = warehouse.id;
+            option1.textContent = warehouse.name;
+            select.appendChild(option1);
+            
+            const option2 = document.createElement('option');
+            option2.value = warehouse.id;
+            option2.textContent = warehouse.name;
+            filterSelect.appendChild(option2);
+        });
+    } catch (error) {
+        console.error('Depolar yüklenemedi:', error);
+    }
+}
+
+function showAddMovementModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addMovementModal'));
+    modal.show();
+}
+
+document.getElementById('addMovementForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await axios.post('/stock/movements', data);
+        
+        alert('Stok hareketi başarıyla eklendi!');
+        bootstrap.Modal.getInstance(document.getElementById('addMovementModal')).hide();
+        this.reset();
+        loadMovements();
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+});
+
+function filterMovements() {
+    // Filter functionality will be implemented
+    loadMovements();
+}
+</script>
+{% endblock %}
+

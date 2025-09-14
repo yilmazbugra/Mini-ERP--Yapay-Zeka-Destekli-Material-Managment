@@ -1,0 +1,319 @@
+{% extends "base.html" %}
+
+{% block title %}Tedarikçiler - Mini ERP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2><i class="fas fa-truck me-2"></i>Tedarikçiler</h2>
+            <div id="add-supplier-button" style="display: none;">
+                <button class="btn btn-primary" onclick="showAddSupplierModal()">
+                    <i class="fas fa-plus me-1"></i>Yeni Tedarikçi
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ad</th>
+                                <th>Vergi No</th>
+                                <th>Telefon</th>
+                                <th>E-posta</th>
+                                <th>Adres</th>
+                                <th>Durum</th>
+                                <th width="120">İşlemler</th>
+                            </tr>
+                        </thead>
+                        <tbody id="suppliers-table">
+                            <tr>
+                                <td colspan="7" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Yükleniyor...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Supplier Modal -->
+<div class="modal fade" id="addSupplierModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Yeni Tedarikçi Ekle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addSupplierForm">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Tedarikçi Adı *</label>
+                        <input type="text" class="form-control" id="name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="tax_no" class="form-label">Vergi No</label>
+                        <input type="text" class="form-control" id="tax_no" name="tax_no">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">Telefon</label>
+                                <input type="text" class="form-control" id="phone" name="phone">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">E-posta</label>
+                                <input type="email" class="form-control" id="email" name="email">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="address" class="form-label">Adres</label>
+                        <textarea class="form-control" id="address" name="address" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Kaydet</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Supplier Modal -->
+<div class="modal fade" id="editSupplierModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Tedarikçi Düzenle</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editSupplierForm">
+                <input type="hidden" id="edit_supplier_id" name="id">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="edit_name" class="form-label">Tedarikçi Adı *</label>
+                        <input type="text" class="form-control" id="edit_name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_tax_no" class="form-label">Vergi No</label>
+                        <input type="text" class="form-control" id="edit_tax_no" name="tax_no">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_phone" class="form-label">Telefon</label>
+                                <input type="text" class="form-control" id="edit_phone" name="phone">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="edit_email" class="form-label">E-posta</label>
+                                <input type="email" class="form-control" id="edit_email" name="email">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="edit_address" class="form-label">Adres</label>
+                        <textarea class="form-control" id="edit_address" name="address" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="edit_is_active" name="is_active" checked>
+                            <label class="form-check-label" for="edit_is_active">
+                                Aktif
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">Güncelle</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// Configure axios for this page
+// axios.defaults.baseURL = '/api'; // Removed to avoid double /api/
+axios.defaults.withCredentials = true;
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if user is logged in
+    const user = JSON.parse(localStorage.getItem('user') || 'null');
+    if (!user) {
+        alert('Lütfen önce giriş yapın!');
+        window.location.href = '/';
+        return;
+    }
+    
+    // Show/hide add button based on user role
+    const addButton = document.getElementById('add-supplier-button');
+    if (user && (user.role === 'admin' || user.role === 'warehouse_manager')) {
+        addButton.style.display = 'block';
+    }
+    
+    loadSuppliers();
+});
+
+async function loadSuppliers() {
+    try {
+        const response = await axios.get('/api/suppliers');
+        const user = JSON.parse(localStorage.getItem('user') || 'null');
+        
+        const suppliers = response.data.suppliers;
+        const tbody = document.getElementById('suppliers-table');
+        
+        if (suppliers.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Tedarikçi bulunamadı</td></tr>';
+            return;
+        }
+        
+        let html = '';
+        suppliers.forEach(supplier => {
+            html += `
+                <tr>
+                    <td><strong>${supplier.name}</strong></td>
+                    <td>${supplier.tax_no || '-'}</td>
+                    <td>${supplier.phone || '-'}</td>
+                    <td>${supplier.email || '-'}</td>
+                    <td>${supplier.address || '-'}</td>
+                    <td>
+                        <span class="badge ${supplier.is_active ? 'bg-success' : 'bg-secondary'}">
+                            ${supplier.is_active ? 'Aktif' : 'Pasif'}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="btn-group btn-group-sm">
+                            ${user && (user.role === 'admin' || user.role === 'warehouse_manager') ? 
+                                `<button class="btn btn-outline-primary" onclick="editSupplier(${supplier.id})" title="Düzenle">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger" onclick="deleteSupplier(${supplier.id})" title="Sil">
+                                    <i class="fas fa-trash"></i>
+                                </button>` : 
+                                '<span class="text-muted">Yetki yok</span>'
+                            }
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+        
+        tbody.innerHTML = html;
+    } catch (error) {
+        console.error('Tedarikçiler yüklenemedi:', error);
+        document.getElementById('suppliers-table').innerHTML = '<tr><td colspan="7" class="text-center text-danger">Veri yüklenemedi</td></tr>';
+    }
+}
+
+function showAddSupplierModal() {
+    const modal = new bootstrap.Modal(document.getElementById('addSupplierModal'));
+    modal.show();
+}
+
+document.getElementById('addSupplierForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    
+    try {
+        const response = await axios.post('/api/suppliers', data, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        alert('Tedarikçi başarıyla eklendi!');
+        bootstrap.Modal.getInstance(document.getElementById('addSupplierModal')).hide();
+        this.reset();
+        loadSuppliers();
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+});
+
+document.getElementById('editSupplierForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const data = Object.fromEntries(formData.entries());
+    const supplierId = data.id;
+    
+    // Remove id from data before sending
+    delete data.id;
+    
+    try {
+        const response = await axios.put(`/api/suppliers/${supplierId}`, data, {
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        alert('Tedarikçi başarıyla güncellendi!');
+        bootstrap.Modal.getInstance(document.getElementById('editSupplierModal')).hide();
+        loadSuppliers();
+    } catch (error) {
+        alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+});
+
+async function editSupplier(id) {
+    try {
+        const response = await axios.get(`/api/suppliers/${id}`);
+        const supplier = response.data.supplier;
+        
+        // Fill the edit form
+        document.getElementById('edit_supplier_id').value = supplier.id;
+        document.getElementById('edit_name').value = supplier.name;
+        document.getElementById('edit_tax_no').value = supplier.tax_no || '';
+        document.getElementById('edit_phone').value = supplier.phone || '';
+        document.getElementById('edit_email').value = supplier.email || '';
+        document.getElementById('edit_address').value = supplier.address || '';
+        document.getElementById('edit_is_active').checked = supplier.is_active;
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('editSupplierModal'));
+        modal.show();
+    } catch (error) {
+        console.error('Tedarikçi bilgileri yüklenemedi:', error);
+        alert('Tedarikçi bilgileri yüklenemedi!');
+    }
+}
+
+async function deleteSupplier(id) {
+    if (confirm('Bu tedarikçiyi silmek istediğinizden emin misiniz?')) {
+        try {
+            await axios.delete(`/api/suppliers/${id}`);
+            alert('Tedarikçi başarıyla silindi!');
+            loadSuppliers();
+        } catch (error) {
+            console.error('Tedarikçi silinemedi:', error);
+            alert('Hata: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+        }
+    }
+}
+</script>
+{% endblock %}
+

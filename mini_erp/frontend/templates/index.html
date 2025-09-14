@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Giriş - Mini ERP{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header text-center">
+                <h4><i class="fas fa-warehouse me-2"></i>Mini ERP</h4>
+                <p class="text-muted">Stok & Envanter Takip Sistemi</p>
+            </div>
+            <div class="card-body">
+                <form id="loginForm">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Kullanıcı Adı</label>
+                        <input type="text" class="form-control" id="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Şifre</label>
+                        <input type="password" class="form-control" id="password" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-sign-in-alt me-1"></i>Giriş Yap
+                    </button>
+                </form>
+                <div class="text-center mt-3">
+                    <small class="text-muted">
+                        Demo için: admin / admin123
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+<script>
+// Configure axios for this page
+axios.defaults.withCredentials = true;
+
+document.getElementById('loginForm').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const username = document.getElementById('username').value;
+    const password = document.getElementById('password').value;
+    
+    try {
+        const response = await axios.post('/api/auth/login', {
+            username: username,
+            password: password
+        });
+        
+        // Store user info in localStorage for frontend use
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+        
+        // Redirect to dashboard - JWT token is now in cookies
+        window.location.href = '/dashboard';
+    } catch (error) {
+        alert('Giriş başarısız: ' + (error.response?.data?.error || 'Bilinmeyen hata'));
+    }
+});
+</script>
+{% endblock %}
